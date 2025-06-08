@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timesheet Web - Suivi du Temps</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); color: white; padding: 20px; text-align: center; }
+        .header h1 { font-size: 2rem; margin-bottom: 10px; font-weight: 300; }
+        .nav-tabs { display: flex; background: #f8f9fa; border-bottom: 2px solid #e9ecef; overflow-x: auto; flex-wrap: wrap; }
+        .nav-tab { padding: 12px 20px; cursor: pointer; border: none; background: none; font-size: 13px; font-weight: 500; transition: all 0.3s ease; white-space: nowrap; border-bottom: 3px solid transparent; flex-shrink: 0; }
+        .nav-tab:hover { background: #e9ecef; }
+        .nav-tab.active { background: white; border-bottom-color: #3498db; color: #3498db; }
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .info-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #3498db; }
+        .info-card h3 { color: #2c3e50; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #555; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .holidays-section { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px; padding: 20px; margin-top: 20px; }
+        .holidays-section h3 { color: #856404; margin-bottom: 15px; }
+        .holidays-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+        .holiday-item { display: flex; justify-content: space-between; padding: 8px; background: white; border-radius: 5px; font-size: 14px; }
+        .calendar { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .calendar-header { background: #3498db; color: white; padding: 15px; text-align: center; }
+        .calendar-header h2 { font-size: 1.3rem; font-weight: 300; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #e9ecef; }
+        .calendar-day-header { background: #2c3e50; color: white; padding: 10px 5px; text-align: center; font-weight: 500; font-size: 12px; }
+        .calendar-day { background: white; padding: 8px 6px; min-height: 140px; border: 1px solid #e9ecef; position: relative; font-size: 12px; }
+        .calendar-day.weekend { background: #c5cdf2; border-color: #667eea; }
+        .calendar-day.holiday { background: #dfcef2; border-color: #764ba2; border-width: 2px; }
+        .calendar-day.other-month { background: #f1f3f4; color: #999; }
+        .day-number { font-weight: bold; margin-bottom: 6px; text-align: center; cursor: pointer; }
+        .holiday-name { font-size: 10px; color: #ff6f00; font-weight: bold; text-align: center; margin-bottom: 4px; }
+        .time-inputs { display: flex; flex-direction: column; gap: 3px; }
+        .time-session { display: flex; flex-direction: column; gap: 2px; }
+        .time-session-label { font-size: 10px; font-weight: bold; color: #2c3e50; text-align: center; }
+        .time-row { display: flex; gap: 2px; align-items: center; }
+        .time-row input { width: 65px; padding: 2px; border: 1px solid #dddS; border-radius: 3px; font-size: 10px; text-align: center; }
+        .time-row span { font-size: 9px; color: #666; }
+        .vacation-select { width: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 3px; font-size: 9px; margin-left: 3px; }    
+        ©.day-total { font-size: 9px; font-weight: bold; color: #27ae60; text-align: center; margin-top: 4px; padding: 2px; background: #d5f4e6; border-radius: 3px; line-height: 1.2; min-height: 24px; }        
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-size: 14px; }
+        .report-table th, .report-table td { padding: 10px; text-align: center; border-bottom: 1px solid #e9ecef; }
+        .report-table th { background: #3498db; color: white; font-weight: 500; font-size: 13px; }
+        .report-table tr:hover { background: #f8f9fa; }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+        .summary-card h3 { font-size: 1.8rem; margin-bottom: 5px; }
+        .summary-card p { opacity: 0.9; font-size: 13px; }
+        .btn { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; margin: 5px; }
+        .btn:hover { background: #2980b9; transform: translateY(-2px); }
+        .btn-export { background: #27ae60; }
+        .btn-export:hover { background: #229954; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .floating-save { position: fixed; bottom: 30px; right: 30px; background: #e74c3c; color: white; border: none; padding: 15px 20px; border-radius: 50px; cursor: pointer; font-weight: 500; box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4); transition: all 0.3s ease; z-index: 1000; }
+        .floating-save:hover { transform: scale(1.1); box-shadow: 0 8px 25px rgba(231, 76, 60, 0.6); }
+        .legend { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; padding: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12px; margin: 5px 0; }
+        .legend-color { width: 25px; height: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        .legend-weekend { background: #c5cdf2; border-color: #667eea;}
+        .legend-holiday { background: #dfcef2; border-color: #764ba2; }
+        .legend-workday { background: white; }
+        .legend-vacation-v { background: #e3f2fd; }
+        .legend-vacation-m { background: #ffebee; }
+        .legend-vacation-a { background: #fff3e0; }
+        .legend-vacation-f { background: #f3e5f5; }
+        .legend-vacation-s { background: #f1f8e9; }
+        .time-row input.vacation-v { background-color: #e3f2fd; }
+        .time-row input.vacation-m { background-color: #ffebee; }
+        .time-row input.vacation-a { background-color: #fff3e0; }
+        .time-row input.vacation-f { background-color: #f3e5f5; }
+        .time-row input.vacation-s { background-color: #f1f8e9; }
+        .monthly-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        .monthly-table th, .monthly-table td { border: 1px solid #ddd; padding: 4px; text-align: center; }
+        .monthly-table th { background: #f5f5f5; font-weight: bold; font-size: 11px; }
+        .monthly-table .date-col { width: 80px; font-weight: bold; }
+        .monthly-table .day-col { width: 40px; }
+        .monthly-table .time-input { width: 80px; padding: 3px; border: 1px solid #ccc; font-size: 12px; text-align: center; font-family: monospace; /* Pour un alignement uniforme */ }
+        .monthly-table .total-half { width: 60px; font-weight: bold; font-size: 11px; }
+        .monthly-table .absence-select { width: 45px; font-size: 11px; }
+        .monthly-table .total-col { width: 60px; font-weight: bold; }
+        .monthly-table .row-weekend { background: #c5cdf2; }
+        .monthly-table .row-holiday { background: #dfcef2; }
+        .monthly-table .row-workday { background: white; }
+        .monthly-table .total-col.alert { color: #e74c3c !important; font-weight: bold !important; }
+        .bonus-col { width: 60px; font-weight: bold; color: #27ae60; }        
+        @media (max-width: 768px) { body { padding: 5px; } .container { border-radius: 10px; } .calendar-day { min-height: 120px; padding: 4px; } .time-row input { width: 60px; } .summary-cards { grid-template-columns: repeat(2, 1fr); } }
+        .status-panel { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); border-radius: 10px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; max-width: 300px; }
+        .status-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-green { background: #27ae60; }
+        .status-orange { background: #f39c12; }
+        .status-red { background: #e74c3c; }
+        .upload-zone { border: 2px dashed #bdc3c7; border-radius: 10px; padding: 30px; text-align: center; margin: 20px 0; transition: all 0.3s ease; cursor: pointer; }
+        .upload-zone:hover { border-color: #3498db; background: #f8f9fa; }
+        .upload-zone.drag-over { border-color: #27ae60; background: #d5f4e6; }
+        .btn-warning { background: #f39c12; }
+        .btn-warning:hover { background: #e67e22; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Timesheet Web</h1>
+            <p>Suivi moderne du temps de travail avec jours fériés Genevoise</p>
+        </div>
+
+        <div class="status-panel" id="statusPanel">
+        <div class="status-item">
+            <div class="status-dot status-green" id="localStorageStatus"></div>
+            <span>localStorage: <span id="localStorageText">OK</span></span>
+        </div>
+        <div class="status-item">
+            <div class="status-dot status-orange" id="autoSaveStatus"></div>
+            <span>Auto-save: <span id="autoSaveText">Activé</span></span>
+        </div>
+        <div class="status-item">
+            <div class="status-dot status-red" id="syncStatus"></div>
+            <span>Sync: <span id="syncText">Manuel</span></span>
+        </div>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ecf0f1; font-size: 11px; color: #7f8c8d;">
+            Dernière sauvegarde: <br><span id="lastSaveTime">Jamais</span>
+        </div>
+    </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('info')">📋 Information</button>
+            <button class="nav-tab" onclick="showTab('jan')">🗓️ Janvier</button>
+            <button class="nav-tab" onclick="showTab('feb')">🗓️ Février</button>
+            <button class="nav-tab" onclick="showTab('mar')">🗓️ Mars</button>
+            <button class="nav-tab" onclick="showTab('apr')">🗓️ Avril</button>
+            <button class="nav-tab" onclick="showTab('may')">🗓️ Mai</button>
+            <button class="nav-tab" onclick="showTab('jun')">🗓️ Juin</button>
+            <button class="nav-tab" onclick="showTab('jul')">🗓️ Juillet</button>
+            <button class="nav-tab" onclick="showTab('aug')">🗓️ Août</button>
+            <button class="nav-tab" onclick="showTab('sep')">🗓️ Septembre</button>
+            <button class="nav-tab" onclick="showTab('oct')">🗓️ Octobre</button>
+            <button class="nav-tab" onclick="showTab('nov')">🗓️ Novembre</button>
+            <button class="nav-tab" onclick="showTab('dec')">🗓️ Décembre</button>
+            <button class="nav-tab" onclick="showTab('report')">📈 Rapport</button>
+            <button class="nav-tab" onclick="showTab('stats')">📊 Statistiques</button>
+            <button class="nav-tab" onclick="showTab('sync')">🔄 Synchronisation</button>
+        </div>
+
+        <div id="info" class="tab-content active">
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>👤 Informations Personnelles</h3>
+                    <div class="form-group">
+                        <label>Nom :</label>
+                        <input type="text" id="lastName" placeholder="Votre nom">
+                    </div>
+                    <div class="form-group">
+                        <label>Prénom :</label>
+                        <input type="text" id="firstName" placeholder="Votre prénom">
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3>📅 Période de Travail</h3>
+                    <div class="form-group">
+                        <label>Année :</label>
+                        <input type="number" id="workYear" value="2025" onchange="updateYear()">
+                    </div>
+                    <div class="form-group">
+                        <label>Du :</label>
+                        <input type="date" id="startDate" value="2025-01-01">
+                    </div>
+                    <div class="form-group">
+                        <label>Au :</label>
+                        <input type="date" id="endDate" value="2025-12-31">
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3>🏖️ Vacances</h3>
+                    <div class="form-group">
+                        <label>Vacances restants année précédente :</label>
+                        <input type="number" id="remainingVacations" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Vacances année courante :</label>
+                        <input type="number" id="currentVacations" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Heures de travail standard par jour :</label>
+                        <input type="number" id="standardHours" value="8" step="0.5">
+                    </div>
+                </div>
+            </div>
+            <div class="holidays-section">
+                <h3>🎄 Jours Fériés pour <span id="holidayYear">2025</span></h3>
+                <div class="holidays-list" id="holidaysList"></div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="loadDataFile()">📁 Charger</button>
+                <button class="btn btn-export" onclick="saveData()">💾 Sauvegarder</button>
+                <button class="btn btn-danger" onclick="resetAllData()">🗑️ Effacer</button>
+            </div>
+        </div>
+
+        <div id="jan" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-jan">Janvier <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-jan">
+                <thead>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-jan"></tbody>
+            </table>
+        </div>
+
+        <div id="feb" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-feb">Février <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-feb">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-feb"></tbody>
+            </table>
+        </div>
+
+        <div id="mar" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-mar">Mars <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-mar">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-mar"></tbody>
+            </table>
+        </div>
+
+        <div id="apr" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-apr">Avril <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-apr">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-apr"></tbody>
+            </table>
+        </div>
+
+        <div id="may" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-may">Mai <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-may">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-may"></tbody>
+            </table>
+        </div>
+
+        <div id="jun" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-jun">Juin <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-jun">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-jun"></tbody>
+            </table>
+        </div>
+
+        <div id="jul" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-jul">Juillet <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-jul">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-jul"></tbody>
+            </table>
+        </div>
+
+        <div id="aug" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-aug">Août <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-aug">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-aug"></tbody>
+            </table>
+        </div>
+
+        <div id="sep" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-sep">Septembre <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-sep">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-sep"></tbody>
+            </table>
+        </div>
+
+        <div id="oct" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-oct">Octobre <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-oct">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-oct"></tbody>
+            </table>
+        </div>
+
+        <div id="nov" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-nov">Novembre <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-nov">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-nov"></tbody>
+            </table>
+        </div>
+
+        <div id="dec" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="color: #2c3e50;" id="title-dec">Décembre <span class="year-display">2025</span></h2>
+                <div class="legend" style="margin: 0;">
+                    <div class="legend-item"><div class="legend-color legend-workday"></div><span>Ouvrable</span></div>
+                    <div class="legend-item"><div class="legend-color legend-weekend"></div><span>Week-end</span></div>
+                    <div class="legend-item"><div class="legend-color legend-holiday"></div><span>Férié</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-v"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">V</span>acances</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-m"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">M</span>aladie</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-a"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">A</span>ccident</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-f"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">F</span>ormation</span></div>
+                    <div class="legend-item"><div class="legend-color legend-vacation-s"></div><span><span style="color: red; text-decoration: underline; font-weight: bold;">S</span>pécial</span></div>
+                </div>
+            </div>
+            <table class="monthly-table" id="table-dec">
+                <thead>
+                <tr>
+                <tr>
+                    <th class="date-col">Date</th>
+                    <th class="day-col">Jour</th>
+                    <th colspan="6">Matin</th>
+                    <th colspan="6">Après-midi</th>
+                    <th class="total-col">Total</th>
+                    <th class="total-col">Total incl.</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Début 1</th>
+                    <th>Fin 1</th>
+                    <th>Début 2</th>
+                    <th>Fin 2</th>
+                    <th>Total</th>
+                    <th>Absences</th>
+                    <th>Heures</th>
+                    <th>Bonus</th>
+                </tr>
+                </thead>
+                <tbody id="table-body-dec"></tbody>
+            </table>
+        </div>
+        <div id="stats" class="tab-content">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: #2c3e50;">📊 Statistiques Annuelles <span id="statsYear">2025</span></h2>
+                <p style="color: #666;">Répartition des jours de travail, congés et absences</p>
+            </div>
+            
+            <div style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">Répartition Annuelle</h3>
+                <canvas id="annualStatsChart" width="800" height="400" style="width: 100%; background: white;"></canvas>
+            </div>
+            
+            <div style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">Détails des Absences</h3>
+                <div id="absenceDetails" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;"></div>
+            </div>
+        </div>
+
+        <div id="sync" class="tab-content">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">🔄 Gestion des Sauvegardes</h2>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>💾 Sauvegarde Locale</h3>
+                    <p style="margin-bottom: 15px; color: #7f8c8d;">Les données sont automatiquement sauvegardées dans votre navigateur.</p>
+                    <button class="btn" onclick="manualSave()">💾 Sauvegarder Maintenant</button>
+                    <button class="btn btn-export" onclick="downloadBackup()">📥 Télécharger Sauvegarde</button>
+                </div>
+                
+                <div class="info-card">
+                    <h3>📁 Import/Export</h3>
+                    <div class="upload-zone" onclick="triggerFileInput()" ondrop="handleDrop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                        📎 Cliquez ou glissez un fichier JSON ici
+                    </div>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileSelect(event)">
+                    <button class="btn" onclick="loadDataFile()">📁 Charger Fichier</button>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🗑️ Nettoyage</h3>
+                    <p style="margin-bottom: 15px; color: #7f8c8d;">Effacer toutes les données stockées.</p>
+                    <button class="btn btn-danger" onclick="resetAllData()">🗑️ Tout Effacer</button>
+                    <button class="btn btn-warning" onclick="clearLocalStorage()">🧹 Vider Cache</button>
+                </div>
+            </div>
+            
+            <div style="background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 10px; padding: 20px; margin-top: 20px;">
+                <h4 style="color: #0c5460; margin-bottom: 15px;">💡 Comment ça marche</h4>
+                <ul style="color: #0c5460; margin-left: 20px;">
+                    <li><strong>Auto-save :</strong> Vos données sont automatiquement sauvegardées dans le navigateur</li>
+                    <li><strong>Téléchargement :</strong> Créez une sauvegarde fichier que vous pouvez garder</li>
+                    <li><strong>Chargement :</strong> Restaurez vos données depuis un fichier de sauvegarde</li>
+                    <li><strong>Synchronisation manuelle :</strong> Remplacez le fichier dans /Json/ pour partager</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="report" class="tab-content">
+            <div class="summary-cards">
+                <div class="summary-card"><h3 id="totalHours">0</h3><p>Heures Totales</p></div>
+                <div class="summary-card"><h3 id="totalDays">0</h3><p>Jours Travaillés</p></div>
+                <div class="summary-card"><h3 id="avgHours">0</h3><p>Moyenne/Jour</p></div>
+                <div class="summary-card"><h3 id="expectedHours">0</h3><p>Heures Attendues</p></div>
+                <div class="summary-card"><h3 id="overtime">0</h3><p>Heures Sup.</p></div>
+                <div class="summary-card" id="vacationCard"><h3 id="remainingVacationsDisplay">0</h3><p>Vacances Restants</p></div>
+            </div>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Mois</th><th>Heures Matin</th><th>Heures Après-midi</th><th>Total Heures</th>
+                        <th>Jours Ouvrés</th><th>Jours Travaillés</th><th>Heures Attendues</th><th>Écart</th><th>Moyenne/Jour</th><th>Absences</th><th>Heures sans bonus</th><th>Heures inclus bonus</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTableBody"></tbody>
+            </table>
+            <div style="margin-top: 30px; text-align: center;">
+                <button class="btn btn-export" onclick="exportData()">📥 Export CSV</button>
+                <button class="btn" onclick="printReport()">🖨️ Imprimer</button>
+                <button class="btn" onclick="exportJSON()">💾 Export JSON</button>
+            </div>
+        </div>
+    </div>
+    <div style="position: fixed; bottom: 10px; left: 20px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 5px; font-size: 11px; color: #666; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        © Jean-Marc Golaz - 7 juin 2025 - Version 2.0 (Last updated: 8 juin 2025)
+    </div>
+
+    <button class="floating-save" onclick="autoSave()">💾 Auto</button>
+
+    <script>
+        let timesheetData = {}, currentYear = 2025;
+        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+        async function getJsonFiles() {
+            try {                
+                const response = await fetch('./Json/', {
+                    method: 'GET',
+                });
+                
+                if (!response.ok) {
+                    console.log('Dossier json non trouvé ou inaccessible');
+                    return [];
+                }
+                
+                const html = await response.text();
+                                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const links = doc.querySelectorAll('a[href$=".json"]');
+                
+                const jsonFiles = [];
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.endsWith('.json')) {
+                        jsonFiles.push({
+                            name: href,
+                            url: `./Json/${href}`
+                        });
+                    }
+                });
+                
+                return jsonFiles;
+            } catch (error) {
+                console.log('Erreur lors de la lecture du dossier json:', error);
+                return [];
+            }
+        }
+        
+        async function getFileLastModified(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                const lastModified = response.headers.get('Last-Modified');
+                return lastModified ? new Date(lastModified) : new Date(0);
+            } catch (error) {
+                console.log(`Erreur lors de la vérification de ${url}:`, error);
+                return new Date(0);
+            }
+        }
+        
+        async function findLatestJsonFile() {
+            try {
+                const jsonFiles = await getJsonFiles();
+                
+                if (jsonFiles.length === 0) {
+                    console.log('Aucun fichier JSON trouvé dans ./Json/');
+                    return null;
+                }
+                
+                console.log(`Trouvé ${jsonFiles.length} fichier(s) JSON:`, jsonFiles.map(f => f.name));
+                                
+                const filesWithDates = await Promise.all(
+                    jsonFiles.map(async (file) => ({
+                        ...file,
+                        lastModified: await getFileLastModified(file.url)
+                    }))
+                );
+                                
+                filesWithDates.sort((a, b) => b.lastModified - a.lastModified);
+                
+                const latestFile = filesWithDates[0];
+                console.log(`Fichier le plus récent: ${latestFile.name} (${latestFile.lastModified.toLocaleString()})`);
+                
+                return latestFile;
+            } catch (error) {
+                console.log('Erreur lors de la recherche du fichier le plus récent:', error);
+                return null;
+            }
+        }
+        
+        async function loadJsonFromUrl(url) {
+            try {
+                console.log(`Chargement automatique de: ${url}`);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+
+                if (data.personal) {
+                    ['lastName', 'firstName', 'workYear', 'startDate', 'endDate', 'remainingVacations', 'currentVacations', 'standardHours'].forEach(field => {
+                        const element = document.getElementById(field);
+                        if (element && data.personal[field]) element.value = data.personal[field];
+                    });
+                    currentYear = parseInt(data.personal.workYear) || currentYear;
+                }
+                
+                if (data.timesheet) timesheetData = data.timesheet;
+                                
+                updateAllYearDisplays();
+                generateAllCalendars();
+                updateHolidaysList();
+                updateReport();
+                
+                console.log('✅ Données chargées automatiquement !');
+                                
+                showAutoLoadNotification(url);
+                
+                return true;
+            } catch (error) {
+                console.log(`Erreur lors du chargement automatique de ${url}:`, error);
+                return false;
+            }
+        }
+
+        function showAutoLoadNotification(url) {            
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #27ae60, #2ecc71);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+                z-index: 9999;
+                font-size: 14px;
+                font-weight: 500;
+                max-width: 350px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            const fileName = url.split('/').pop();
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px;">📁</span>
+                    <div>
+                        <div><strong>Chargement automatique</strong></div>
+                        <div style="font-size: 12px; opacity: 0.9;">${fileName}</div>
+                    </div>
+                </div>
+            `;
+                        
+            if (!document.getElementById('autoLoadStyles')) {
+                const style = document.createElement('style');
+                style.id = 'autoLoadStyles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+                        
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+        
+        async function autoLoadLatestJson() {
+            try {
+                console.log('🔍 Recherche du fichier JSON le plus récent...');
+                
+                const latestFile = await findLatestJsonFile();
+                
+                if (latestFile) {
+                    const success = await loadJsonFromUrl(latestFile.url);
+                    if (success) {
+                        console.log('🎉 Chargement automatique réussi !');
+                    } else {
+                        console.log('❌ Échec du chargement automatique');
+                    }
+                } else {
+                    console.log('📂 Aucun fichier JSON trouvé pour le chargement automatique');
+                }
+            } catch (error) {
+                console.log('Erreur générale lors du chargement automatique:', error);
+            }
+        }
+        
+        async function autoLoadWithNamingConvention() {
+            try {                
+                const currentDate = new Date();
+                const year = currentDate.getFullYear();
+                                
+                const patterns = [
+                    `./Json/timesheet_${year}.json`,
+                    `./Json/timesheet_latest.json`,
+                    `./Json/timesheet.json`,
+                    `./Json/latest.json`
+                ];
+                
+                for (const pattern of patterns) {
+                    try {
+                        console.log(`Tentative de chargement: ${pattern}`);
+                        const response = await fetch(pattern);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                                                        
+                            if (data.personal) {
+                                ['lastName', 'firstName', 'workYear', 'startDate', 'endDate', 'remainingVacations', 'currentVacations', 'standardHours'].forEach(field => {
+                                    const element = document.getElementById(field);
+                                    if (element && data.personal[field]) element.value = data.personal[field];
+                                });
+                                currentYear = parseInt(data.personal.workYear) || currentYear;
+                            }
+                            
+                            if (data.timesheet) timesheetData = data.timesheet;
+                            
+                            updateAllYearDisplays();
+                            generateAllCalendars();
+                            updateHolidaysList();
+                            updateReport();
+                            
+                            showAutoLoadNotification(pattern);
+                            console.log(`✅ Chargé avec succès: ${pattern}`);
+                            return true;
+                        }
+                    } catch (error) {
+                        console.log(`Échec pour ${pattern}:`, error.message);
+                        continue;
+                    }
+                }
+                
+                console.log('📂 Aucun fichier JSON trouvé avec les conventions de nommage');
+                return false;
+            } catch (error) {
+                console.log('Erreur lors du chargement avec convention:', error);
+                return false;
+            }
+        }
+
+        function getSwissHolidays(year) {
+            const holidays = [];
+            holidays.push({name: 'Nouvel An', date: new Date(year, 0, 1)});
+            holidays.push({name: 'Fête nationale', date: new Date(year, 7, 1)});
+            holidays.push({name: 'Noël', date: new Date(year, 11, 25)});
+            holidays.push({name: 'Restauration', date: new Date(year, 11, 31)});
+            
+            const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
+            const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451), month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1, easter = new Date(year, month - 1, day);
+            
+            const goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
+            holidays.push({name: 'Vendredi-Saint', date: goodFriday});
+            const easterMonday = new Date(easter); easterMonday.setDate(easter.getDate() + 1);
+            holidays.push({name: 'Lundi de Pâques', date: easterMonday});
+            const ascension = new Date(easter); ascension.setDate(easter.getDate() + 39);
+            holidays.push({name: 'Ascension', date: ascension});
+            const whitMonday = new Date(easter); whitMonday.setDate(easter.getDate() + 50);
+            holidays.push({name: 'Lundi de Pentecôte', date: whitMonday});
+            
+            const firstSunday = new Date(year, 8, 1);
+            while (firstSunday.getDay() !== 0) firstSunday.setDate(firstSunday.getDate() + 1);
+            const jeuneGenevois = new Date(firstSunday); jeuneGenevois.setDate(firstSunday.getDate() + 4);
+            holidays.push({name: 'Jeûne Genevois', date: jeuneGenevois});
+            return holidays;
+        }
+
+        function isHoliday(date) {
+            const holidays = getSwissHolidays(date.getFullYear());
+            return holidays.find(holiday => holiday.date.getDate() === date.getDate() && holiday.date.getMonth() === date.getMonth());
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function calculateHours(startTime, endTime) {
+            if (!startTime || !endTime) return 0;
+            const start = new Date(`2000-01-01T${startTime}`), end = new Date(`2000-01-01T${endTime}`);
+            return end <= start ? 0 : (end - start) / (1000 * 60 * 60);
+        }
+
+        function calculateDayHours(dayData) {
+            const am1Hours = calculateHours(dayData['am1-start'], dayData['am1-end']);
+            const am2Hours = calculateHours(dayData['am2-start'], dayData['am2-end']);
+            const pm1Hours = calculateHours(dayData['pm1-start'], dayData['pm1-end']);
+            const pm2Hours = calculateHours(dayData['pm2-start'], dayData['pm2-end']);
+            const amTotal = am1Hours + am2Hours;
+            const pmTotal = pm1Hours + pm2Hours;
+            return { am: amTotal, pm: pmTotal, total: amTotal + pmTotal };
+        }
+
+        function getWorkingDaysInMonth(year, month) {
+            let workingDays = 0;
+            let absenceHalfDays = 0;
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            
+            for (let day = 1; day <= lastDay; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                const holiday = isHoliday(date);
+                const dayKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holiday) {
+                    workingDays++;
+                                        
+                    if (timesheetData[dayKey]) {
+                        const data = timesheetData[dayKey];
+                        if (data['absence-am'] && ['V', 'M', 'A', 'F', 'S'].includes(data['absence-am'])) {
+                            absenceHalfDays += 0.5;
+                        }
+                        if (data['absence-pm'] && ['V', 'M', 'A', 'F', 'S'].includes(data['absence-pm'])) {
+                            absenceHalfDays += 0.5;
+                        }
+                    }
+                }
+            }
+            
+            return { 
+                total: workingDays, 
+                adjusted: workingDays - absenceHalfDays,
+                absences: absenceHalfDays 
+            };
+        }
+
+        function updateTimeData(dayKey, field, value) {
+            if (!timesheetData[dayKey]) timesheetData[dayKey] = {};
+            timesheetData[dayKey][field] = value;
+            updateDayTotal(dayKey);
+            updateReport();
+                        
+            setTimeout(autoSave, 1000);
+            updateStatusPanel();
+        }
+
+        function updateVacationData(dayKey, field, value) {
+            if (!timesheetData[dayKey]) timesheetData[dayKey] = {};
+            timesheetData[dayKey][field] = value;
+            
+            const session = field.startsWith('am') ? 'am' : 'pm';
+            const inputs = [
+                document.getElementById(`${session}1-start-${dayKey}`),
+                document.getElementById(`${session}1-end-${dayKey}`),
+                document.getElementById(`${session}2-start-${dayKey}`),
+                document.getElementById(`${session}2-end-${dayKey}`)
+            ];
+            
+            if (value && value !== '') {
+                inputs.forEach(input => {
+                    if (input) {
+                        input.disabled = true;
+                        input.value = '';
+                        const colorClass = `vacation-${value.toLowerCase()}`;
+                        input.className = `vacation-select ${colorClass}`;
+                    }
+                });
+                timesheetData[dayKey][`${session}1-start`] = '';
+                timesheetData[dayKey][`${session}1-end`] = '';
+                timesheetData[dayKey][`${session}2-start`] = '';
+                timesheetData[dayKey][`${session}2-end`] = '';
+            } else {
+                inputs.forEach(input => {
+                    if (input) {
+                        input.disabled = false;
+                        input.className = '';
+                    }
+                });
+            }
+            
+            updateDayTotal(dayKey);
+            updateReport();
+            setTimeout(autoSave, 1000);
+        }
+
+        function updateAbsenceData(dayKey, period, value) {
+            if (!timesheetData[dayKey]) timesheetData[dayKey] = {};
+            timesheetData[dayKey][`absence-${period}`] = value;
+            
+            const inputs = period === 'am' ? [
+                document.getElementById(`am1-start-${dayKey}`),
+                document.getElementById(`am1-end-${dayKey}`),
+                document.getElementById(`am2-start-${dayKey}`),
+                document.getElementById(`am2-end-${dayKey}`)
+            ] : [
+                document.getElementById(`pm1-start-${dayKey}`),
+                document.getElementById(`pm1-end-${dayKey}`),
+                document.getElementById(`pm2-start-${dayKey}`),
+                document.getElementById(`pm2-end-${dayKey}`)
+            ];
+            
+            if (value && value !== '') {
+                inputs.forEach(input => {
+                    if (input) {
+                        input.disabled = true;
+                        input.value = '';
+                        input.style.backgroundColor = getAbsenceColor(value);
+                    }
+                });                
+                
+                if (period === 'am') {
+                    timesheetData[dayKey]['am1-start'] = '';
+                    timesheetData[dayKey]['am1-end'] = '';
+                    timesheetData[dayKey]['am2-start'] = '';
+                    timesheetData[dayKey]['am2-end'] = '';
+                } else {
+                    timesheetData[dayKey]['pm1-start'] = '';
+                    timesheetData[dayKey]['pm1-end'] = '';
+                    timesheetData[dayKey]['pm2-start'] = '';
+                    timesheetData[dayKey]['pm2-end'] = '';
+                }
+            } else {
+                inputs.forEach(input => {
+                    if (input) {
+                        input.disabled = false;
+                        input.style.backgroundColor = '';
+                    }
+                });
+            }
+            
+            updateDayTotal(dayKey);
+            updateReport();
+                        
+            setTimeout(autoSave, 1000);
+            updateStatusPanel();
+        }
+        function getAbsenceColor(type) {
+            const colors = {
+                'V': '#e3f2fd',
+                'M': '#ffebee',
+                'A': '#fff3e0',
+                'F': '#f3e5f5',
+                'S': '#f1f8e9'
+            };
+            return colors[type] || '';
+        }
+
+        function addMinutesIfNeeded(input) {
+            let value = input.value.trim();
+            if (value) {                
+                if (/^\d{1,2}$/.test(value)) {
+                    input.value = value.padStart(2, '0') + ':00';
+                }                
+                else if (/^\d{1,2}:$/.test(value)) {
+                    input.value = value.replace(':', '').padStart(2, '0') + ':00';
+                }                
+                else if (/^\d{1,2}\.\d{2}$/.test(value)) {
+                    const parts = value.split('.');
+                    input.value = parts[0].padStart(2, '0') + ':' + parts[1];
+                }                
+                else if (/^\d{1,2}\.\d{1}$/.test(value)) {
+                    const parts = value.split('.');
+                    input.value = parts[0].padStart(2, '0') + ':' + parts[1].padEnd(2, '0');
+                }                
+                else if (/^\d{1,2}:\d{1}$/.test(value)) {
+                    const parts = value.split(':');
+                    input.value = parts[0].padStart(2, '0') + ':' + parts[1].padEnd(2, '0');
+                }                
+                else if (/^\d{2}:\d{1}$/.test(value)) {
+                    const parts = value.split(':');
+                    input.value = parts[0] + ':' + parts[1].padEnd(2, '0');
+                }
+                input.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function updateDayTotal(dayKey) {
+            const data = timesheetData[dayKey];
+            if (!data) return;
+            
+            const am1Hours = calculateHours(data['am1-start'], data['am1-end']);
+            const am2Hours = calculateHours(data['am2-start'], data['am2-end']);
+            const totalAM = am1Hours + am2Hours;
+            
+            const pm1Hours = calculateHours(data['pm1-start'], data['pm1-end']);
+            const pm2Hours = calculateHours(data['pm2-start'], data['pm2-end']);
+            const totalPM = pm1Hours + pm2Hours;
+            
+            const totalDay = totalAM + totalPM;
+                        
+            const bonusHours = calculateWeekendBonus(dayKey, totalDay);
+                        
+            const totalAMElement = document.getElementById(`total-am-${dayKey}`);
+            const totalPMElement = document.getElementById(`total-pm-${dayKey}`);
+            const totalElement = document.getElementById(`total-${dayKey}`);
+            const bonusElement = document.getElementById(`bonus-${dayKey}`);
+            
+            if (totalAMElement) totalAMElement.textContent = totalAM > 0 ? `${totalAM.toFixed(1)}h` : '0h';
+            if (totalPMElement) totalPMElement.textContent = totalPM > 0 ? `${totalPM.toFixed(1)}h` : '0h';
+            if (totalElement) {
+                totalElement.textContent = totalDay > 0 ? `${totalDay.toFixed(1)}h` : '0h';
+                                
+                const dateParts = dayKey.split('-');
+                const year = parseInt(dateParts[0]);
+                const month = parseInt(dateParts[1]) - 1;
+                const day = parseInt(dateParts[2]);
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                const holiday = isHoliday(date);
+                const standardHours = parseFloat(document.getElementById('standardHours')?.value) || 8;
+                                
+                if (!holiday && dayOfWeek !== 0 && dayOfWeek !== 6 && totalDay > 0 && totalDay < standardHours) {
+                    totalElement.style.color = '#e74c3c';
+                    totalElement.style.fontWeight = 'bold';
+                } else {
+                    totalElement.style.color = '';
+                    totalElement.style.fontWeight = 'bold';
+                }
+            }
+            
+            if (bonusElement) {
+                if (bonusHours > totalDay) { 
+                    bonusElement.textContent = `${bonusHours.toFixed(1)}h`;
+                    bonusElement.style.color = '#27ae60';
+                    bonusElement.style.fontWeight = 'bold';
+                } else {
+                    bonusElement.textContent = '0h';
+                    bonusElement.style.color = '';
+                    bonusElement.style.fontWeight = '';
+                }
+            }
+        }
+
+        function generateAllCalendars() {
+            for (let month = 0; month < 12; month++) {
+                generateCalendar(month);
+            }
+        }
+
+        function generateCalendar(month) {
+            const monthKey = monthKeys[month];
+            const tbody = document.getElementById(`table-body-${monthKey}`);
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            const lastDay = new Date(currentYear, month + 1, 0).getDate();
+            
+            for (let day = 1; day <= lastDay; day++) {
+                const date = new Date(currentYear, month, day);
+                const dayOfWeek = date.getDay();
+                const holiday = isHoliday(date);
+                const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                let rowClass = 'row-workday';
+                if (holiday) rowClass = 'row-holiday';
+                else if (dayOfWeek === 0 || dayOfWeek === 6) rowClass = 'row-weekend';
+                
+                const row = document.createElement('tr');
+                row.className = rowClass;
+                row.innerHTML = `
+                    <td class="date-col">${String(day).padStart(2, '0')}.${String(month + 1).padStart(2, '0')}</td>
+                    <td class="day-col">${dayNames[dayOfWeek]}</td>
+                    
+                    <!-- MATIN - 2 sessions + total + absence -->
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="am1-start-${dayKey}" onchange="updateTimeData('${dayKey}', 'am1-start', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="am1-end-${dayKey}" onchange="updateTimeData('${dayKey}', 'am1-end', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="am2-start-${dayKey}" onchange="updateTimeData('${dayKey}', 'am2-start', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="am2-end-${dayKey}" onchange="updateTimeData('${dayKey}', 'am2-end', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td class="total-half" id="total-am-${dayKey}">0h</td>
+                    <td>
+                        <select class="absence-select" id="absence-am-${dayKey}" onchange="updateAbsenceData('${dayKey}', 'am', this.value)">
+                            <option value=""></option>
+                            <option value="V">V</option>
+                            <option value="M">M</option>
+                            <option value="A">A</option>
+                            <option value="F">F</option>
+                            <option value="S">S</option>
+                        </select>
+                    </td>
+                    
+                    <!-- APRÈS-MIDI - 2 sessions + total + absence -->
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="pm1-start-${dayKey}" onchange="updateTimeData('${dayKey}', 'pm1-start', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="pm1-end-${dayKey}" onchange="updateTimeData('${dayKey}', 'pm1-end', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="pm2-start-${dayKey}" onchange="updateTimeData('${dayKey}', 'pm2-start', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td><input type="text" class="time-input" placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}" id="pm2-end-${dayKey}" onchange="updateTimeData('${dayKey}', 'pm2-end', this.value)" onblur="addMinutesIfNeeded(this)"></td>
+                    <td class="total-half" id="total-pm-${dayKey}">0h</td>
+                    <td>
+                        <select class="absence-select" id="absence-pm-${dayKey}" onchange="updateAbsenceData('${dayKey}', 'pm', this.value)">
+                            <option value=""></option>
+                            <option value="V">V</option>
+                            <option value="M">M</option>
+                            <option value="A">A</option>
+                            <option value="F">F</option>
+                            <option value="S">S</option>
+                        </select>
+                    </td>
+                    
+                    <!-- TOTAL JOURNÉE -->
+                    <td class="total-col" id="total-${dayKey}">0h</td>
+                    <!-- NOUVELLE COLONNE BONUS -->
+                    <td class="bonus-col" id="bonus-${dayKey}">0h</td>
+                `;
+                tbody.appendChild(row);
+            }
+            
+            loadCalendarData(month);
+        }
+
+        function calculateWeekendBonus(dayKey, totalHours) {
+        if (totalHours === 0) return 0;
+                        
+            const dateParts = dayKey.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]) - 1; 
+            const day = parseInt(dateParts[2]);
+            const date = new Date(year, month, day);
+            const dayOfWeek = date.getDay();
+            const holiday = isHoliday(date);
+            
+            let bonusRate = 1; 
+            
+            if (holiday || dayOfWeek === 0) { 
+                bonusRate = 1.5;
+            } else if (dayOfWeek === 6) { 
+                bonusRate = 1.25;
+            }
+            
+            return totalHours * bonusRate;
+        }
+
+        function loadCalendarData(month) {
+            const lastDay = new Date(currentYear, month + 1, 0).getDate();
+            
+            for (let day = 1; day <= lastDay; day++) {
+                const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                if (timesheetData[dayKey]) {
+                    const data = timesheetData[dayKey];
+                                        
+                    const timeInputs = ['am1-start', 'am1-end', 'am2-start', 'am2-end', 'pm1-start', 'pm1-end', 'pm2-start', 'pm2-end'];
+                    timeInputs.forEach(inputType => {
+                        const input = document.getElementById(`${inputType}-${dayKey}`);
+                        if (input && data[inputType]) {
+                            input.value = data[inputType];
+                        }
+                    });
+                                        
+                    const absenceAM = document.getElementById(`absence-am-${dayKey}`);
+                    if (absenceAM && data['absence-am']) {
+                        absenceAM.value = data['absence-am'];
+                        updateAbsenceData(dayKey, 'am', data['absence-am']);
+                    }
+                    
+                    const absencePM = document.getElementById(`absence-pm-${dayKey}`);
+                    if (absencePM && data['absence-pm']) {
+                        absencePM.value = data['absence-pm'];
+                        updateAbsenceData(dayKey, 'pm', data['absence-pm']);
+                    }
+                    
+                    updateDayTotal(dayKey);
+                }
+            }
+        }
+
+                function updateAllYearDisplays() {                    
+                    const yearDisplays = document.querySelectorAll('.year-display');
+                    yearDisplays.forEach(span => {
+                        span.textContent = currentYear;
+                    });
+                                        
+                    const statsYear = document.getElementById('statsYear');
+                    if (statsYear) statsYear.textContent = currentYear;
+                                        
+                    const holidayYear = document.getElementById('holidayYear');
+                    if (holidayYear) holidayYear.textContent = currentYear;
+                }        
+                
+                function updateYear() {
+                    const newYear = parseInt(document.getElementById('workYear').value);
+                    if (newYear !== currentYear) {
+                        currentYear = newYear;
+                        document.getElementById('startDate').value = `${currentYear}-01-01`;
+                        document.getElementById('endDate').value = `${currentYear}-12-31`;
+                                                
+                        updateAllYearDisplays();
+                        
+                        generateAllCalendars();
+                        updateHolidaysList();
+                        updateReport();
+                    }
+                }
+
+        function updateHolidaysList() {
+            const holidays = getSwissHolidays(currentYear);
+            const holidaysList = document.getElementById('holidaysList');
+            const holidayYear = document.getElementById('holidayYear');
+            if (holidayYear) holidayYear.textContent = currentYear;
+            if (!holidaysList) return;
+            holidaysList.innerHTML = '';
+            holidays.forEach(holiday => {
+                const holidayDiv = document.createElement('div');
+                holidayDiv.className = 'holiday-item';
+                holidayDiv.innerHTML = `<span>${holiday.name}</span><span>${holiday.date.toLocaleDateString('fr-FR', {weekday: 'short', day: 'numeric', month: 'short'})}</span>`;
+                holidaysList.appendChild(holidayDiv);
+            });
+        }
+
+        function fillStandardHours(dayKey) {
+            if (confirm('Remplir avec les heures standard (8h-12h / 13h-17h) ?')) {
+                const fields = ['am1-start', 'am1-end', 'pm1-start', 'pm1-end'];
+                const values = ['08:00', '12:00', '13:00', '17:00'];
+                fields.forEach((field, i) => {
+                    const input = document.getElementById(`${field}-${dayKey}`);
+                    if (input) input.value = values[i];
+                    updateTimeData(dayKey, field, values[i]);
+                });
+            }
+        }
+
+        function updateReport() {
+            let totalHours = 0, totalDaysWorked = 0, totalExpectedHours = 0;
+            let totalWeekendHours = 0, totalWeekendBonusHours = 0; 
+            const standardHours = parseFloat(document.getElementById('standardHours')?.value) || 8;
+            const monthlyData = [];
+            
+            let vacationDaysTaken = 0;
+            
+            for (let month = 0; month < 12; month++) {
+                let monthAmHours = 0, monthPmHours = 0, monthDaysWorked = 0;
+                let monthWeekendHours = 0, monthWeekendBonusHours = 0; 
+                let monthAbsences = { V: 0, M: 0, A: 0, F: 0, S: 0 };
+                
+                const workingDaysInfo = getWorkingDaysInMonth(currentYear, month);
+                const monthWorkingDays = workingDaysInfo.total;
+                const adjustedWorkingDays = workingDaysInfo.adjusted;
+                const monthAbsenceDays = workingDaysInfo.absences;
+                
+                const lastDay = new Date(currentYear, month + 1, 0).getDate();
+                
+                for (let day = 1; day <= lastDay; day++) {
+                    const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const date = new Date(currentYear, month, day);
+                    const dayOfWeek = date.getDay();
+                    const holiday = isHoliday(date);
+                    
+                    if (timesheetData[dayKey]) {
+                        const data = timesheetData[dayKey];
+                        const hours = calculateDayHours(data);
+                                                
+                        if (holiday || dayOfWeek === 0 || dayOfWeek === 6) {                            
+                            monthWeekendHours += hours.total;
+                            monthWeekendBonusHours += calculateWeekendBonus(dayKey, hours.total);
+                        } else {                            
+                            let dayWorkedAmount = 0;
+                            
+                            if (!data['absence-am'] && hours.am > 0) {
+                                dayWorkedAmount += 0.5;
+                                monthAmHours += hours.am;
+                            }
+                            if (!data['absence-pm'] && hours.pm > 0) {
+                                dayWorkedAmount += 0.5;
+                                monthPmHours += hours.pm;
+                            }
+                            
+                            monthDaysWorked += dayWorkedAmount;
+                        }
+                                                
+                        if (data['absence-am']) {
+                            monthAbsences[data['absence-am']] = (monthAbsences[data['absence-am']] || 0) + 0.5;
+                            if (data['absence-am'] === 'V') vacationDaysTaken += 0.5;
+                        }
+                        if (data['absence-pm']) {
+                            monthAbsences[data['absence-pm']] = (monthAbsences[data['absence-pm']] || 0) + 0.5;
+                            if (data['absence-pm'] === 'V') vacationDaysTaken += 0.5;
+                        }
+                    }
+                }
+                
+                const monthTotal = monthAmHours + monthPmHours; 
+                const monthExpectedHours = adjustedWorkingDays * standardHours;
+                
+                totalHours += monthTotal;
+                totalDaysWorked += monthDaysWorked;
+                totalExpectedHours += monthExpectedHours;
+                totalWeekendHours += monthWeekendHours;
+                totalWeekendBonusHours += monthWeekendBonusHours;
+                
+                const totalMonthAbsences = Object.values(monthAbsences).reduce((sum, val) => sum + val, 0);
+                
+                monthlyData.push({
+                    name: monthNames[month],
+                    amHours: monthAmHours.toFixed(1),
+                    pmHours: monthPmHours.toFixed(1),
+                    totalHours: monthTotal.toFixed(1),
+                    workingDays: adjustedWorkingDays.toFixed(1),
+                    daysWorked: monthDaysWorked.toFixed(1),
+                    expectedHours: monthExpectedHours.toFixed(1),
+                    difference: (monthTotal - monthExpectedHours).toFixed(1),
+                    average: monthDaysWorked > 0 ? (monthTotal / monthDaysWorked).toFixed(1) : '0.0',
+                    totalAbsences: totalMonthAbsences.toFixed(1),
+                    weekendHours: monthWeekendHours.toFixed(1), 
+                    weekendBonusHours: monthWeekendBonusHours.toFixed(1) 
+                });
+            }
+            
+            const overtime = totalHours - totalExpectedHours;
+                        
+            if (document.getElementById('totalHours')) document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            if (document.getElementById('totalDays')) document.getElementById('totalDays').textContent = totalDaysWorked.toFixed(1);
+            if (document.getElementById('avgHours')) document.getElementById('avgHours').textContent = totalDaysWorked > 0 ? (totalHours / totalDaysWorked).toFixed(1) : '0.0';
+            if (document.getElementById('expectedHours')) document.getElementById('expectedHours').textContent = totalExpectedHours.toFixed(1);
+            
+            const overtimeEl = document.getElementById('overtime');
+            if (overtimeEl) {
+                overtimeEl.textContent = overtime.toFixed(1);
+                overtimeEl.style.color = overtime >= 0 ? '#27ae60' : '#e74c3c';
+            }
+                        
+            const remainingVacationsPrevYear = parseFloat(document.getElementById('remainingVacations')?.value) || 0;
+            const currentVacationsDays = parseFloat(document.getElementById('currentVacations')?.value) || 0;
+            const totalVacationDays = remainingVacationsPrevYear + currentVacationsDays;
+            const remainingVacationDays = totalVacationDays - vacationDaysTaken;
+            
+            if (document.getElementById('remainingVacationsDisplay')) {
+                document.getElementById('remainingVacationsDisplay').textContent = remainingVacationDays.toFixed(1);
+            }
+            
+            const vacationCard = document.getElementById('vacationCard');
+            if (vacationCard) {
+                const gradient = remainingVacationDays >= 0 ? 
+                    'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)' : 
+                    'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+                vacationCard.style.background = gradient;
+            }
+                        
+            const tbody = document.getElementById('reportTableBody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                monthlyData.forEach(month => {
+                    const row = document.createElement('tr');
+                    const differenceClass = parseFloat(month.difference) >= 0 ? 'style="color: #27ae60"' : 'style="color: #e74c3c"';
+                    row.innerHTML = `
+                        <td><strong>${month.name}</strong></td>
+                        <td>${month.amHours}h</td>
+                        <td>${month.pmHours}h</td>
+                        <td><strong>${month.totalHours}h</strong></td>
+                        <td>${month.workingDays}</td>
+                        <td>${month.daysWorked}</td>
+                        <td>${month.expectedHours}h</td>
+                        <td ${differenceClass}><strong>${month.difference}h</strong></td>
+                        <td>${month.average}h</td>
+                        <td><strong>${month.totalAbsences}</strong></td>
+                        <td>${month.weekendHours}h</td>
+                        <td style="color: #27ae60;"><strong>${month.weekendBonusHours}h</strong></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            createAnnualStatsChart();
+        }
+
+        function createAnnualStatsChart() {
+            const canvas = document.getElementById('annualStatsChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            let workDays = 0, weekends = 0, holidays = 0;
+            let vacationDays = 0, sickDays = 0, accidentDays = 0, trainingDays = 0, specialDays = 0;
+                        
+            let currentWeekend = null;
+            
+            for (let month = 0; month < 12; month++) {
+                const lastDay = new Date(currentYear, month + 1, 0).getDate();
+                for (let day = 1; day <= lastDay; day++) {
+                    const date = new Date(currentYear, month, day);
+                    const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayOfWeek = date.getDay();
+                    const holiday = isHoliday(date);
+                    
+                    if (holiday) {
+                        holidays++;
+                    } else if (dayOfWeek === 6) {
+                        weekends++;
+                    } else if (dayOfWeek === 0) {                        
+                    } else {
+                        const data = timesheetData[dayKey];
+                        let hasWorked = false;
+                        
+                        if (data) {                            
+                            if (data['absence-am'] === 'V') vacationDays += 0.5;
+                            if (data['absence-pm'] === 'V') vacationDays += 0.5;
+                            if (data['absence-am'] === 'M') sickDays += 0.5;
+                            if (data['absence-pm'] === 'M') sickDays += 0.5;
+                            if (data['absence-am'] === 'A') accidentDays += 0.5;
+                            if (data['absence-pm'] === 'A') accidentDays += 0.5;
+                            if (data['absence-am'] === 'F') trainingDays += 0.5;
+                            if (data['absence-pm'] === 'F') trainingDays += 0.5;
+                            if (data['absence-am'] === 'S') specialDays += 0.5;
+                            if (data['absence-pm'] === 'S') specialDays += 0.5;
+                            
+                            const hours = calculateDayHours(data);
+                            if (hours.total > 0) {
+                                hasWorked = true;
+                            }
+                        }
+                        
+                        if (hasWorked || (!data || (!data['absence-am'] && !data['absence-pm']))) {
+                            workDays++;
+                        }
+                    }
+                }
+            }
+            
+            const data = [
+                { label: 'Jours travaillés', value: workDays, color: '#27ae60' },
+                { label: 'Week-ends', value: weekends, color: '#95a5a6' },
+                { label: 'Jours fériés', value: holidays, color: '#f39c12' },
+                { label: 'Vacances', value: vacationDays, color: '#3498db' },
+                { label: 'Maladie', value: sickDays, color: '#e74c3c' },
+                { label: 'Accident', value: accidentDays, color: '#e67e22' },
+                { label: 'Formation', value: trainingDays, color: '#9b59b6' },
+                { label: 'Spécial', value: specialDays, color: '#34495e' }
+            ];
+            
+            const filteredData = data.filter(item => item.value > 0);
+            
+            if (filteredData.length === 0) return;
+            
+            const chartWidth = canvas.width - 100;
+            const chartHeight = canvas.height - 80;
+            const maxValue = Math.max(...filteredData.map(item => item.value));
+            const barWidth = chartWidth / filteredData.length - 20;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            filteredData.forEach((item, index) => {
+                const barHeight = (item.value / maxValue) * chartHeight;
+                const x = 50 + (index * (barWidth + 20));
+                const y = canvas.height - 40 - barHeight;
+                
+                ctx.fillStyle = item.color;
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(item.value, x + barWidth/2, y - 5);
+                
+                ctx.save();
+                ctx.translate(x + barWidth/2, canvas.height - 15);
+                ctx.rotate(-Math.PI/6);
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'right';
+                ctx.fillText(item.label, 0, 0);
+                ctx.restore();
+            });
+            
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Répartition des jours - ${currentYear}`, canvas.width/2, 25);
+                        
+            const absenceDetails = document.getElementById('absenceDetails');
+            if (absenceDetails) {
+                absenceDetails.innerHTML = `
+                    <div style="text-align: center; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                        <h4 style="color: #27ae60; margin: 0 0 5px 0;">${workDays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours travaillés</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="color: #95a5a6; margin: 0 0 5px 0;">${weekends}</h4>
+                        <p style="margin: 0; font-size: 14px;">Week-ends</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #fff3e0; border-radius: 8px;">
+                        <h4 style="color: #f39c12; margin: 0 0 5px 0;">${holidays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours fériés</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                        <h4 style="color: #3498db; margin: 0 0 5px 0;">${vacationDays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours de vacances</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #ffebee; border-radius: 8px;">
+                        <h4 style="color: #e74c3c; margin: 0 0 5px 0;">${sickDays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours de maladie</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #fce4ec; border-radius: 8px;">
+                        <h4 style="color: #e67e22; margin: 0 0 5px 0;">${accidentDays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours d'accident</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f3e5f5; border-radius: 8px;">
+                        <h4 style="color: #9b59b6; margin: 0 0 5px 0;">${trainingDays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours de formation</p>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #ecf0f1; border-radius: 8px;">
+                        <h4 style="color: #34495e; margin: 0 0 5px 0;">${specialDays}</h4>
+                        <p style="margin: 0; font-size: 14px;">Jours spéciaux</p>
+                    </div>
+                `;
+            }
+        }
+
+        function gatherAllData() {
+            return {
+                personal: {
+                    lastName: document.getElementById('lastName').value,
+                    firstName: document.getElementById('firstName').value,
+                    workYear: document.getElementById('workYear').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    remainingVacations: document.getElementById('remainingVacations').value,
+                    currentVacations: document.getElementById('currentVacations').value,
+                    standardHours: document.getElementById('standardHours').value
+                },
+                timesheet: timesheetData,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        function autoSave() {
+            try {
+                const data = gatherAllData();
+                const dataStr = JSON.stringify(data, null, 2);
+                                
+                localStorage.setItem('timesheetData', dataStr);
+                localStorage.setItem('timesheetLastSave', Date.now().toString());
+                
+                console.log('✅ Sauvegarde automatique réussie');
+                                
+                const saveBtn = document.querySelector('.floating-save');
+                if (saveBtn) {
+                    const originalText = saveBtn.innerHTML;
+                    saveBtn.innerHTML = '✅ Sauvé';
+                    saveBtn.style.background = '#27ae60';
+                    
+                    setTimeout(() => {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.style.background = '#e74c3c';
+                    }, 2000);
+                }
+                                
+                showSaveNotification('Données sauvegardées automatiquement');
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Erreur sauvegarde automatique:', error);
+                showSaveNotification('Erreur lors de la sauvegarde', 'error');
+                return false;
+            }
+        }
+
+        function showSaveNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 90px;
+                right: 30px;
+                background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
+                color: white;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                z-index: 9999;
+                opacity: 0.9;
+                animation: slideUp 0.3s ease-out;
+            `;
+                        
+            if (!document.getElementById('notificationStyles')) {
+                const style = document.createElement('style');
+                style.id = 'notificationStyles';
+                style.textContent = `
+                    @keyframes slideUp {
+                        from { transform: translateY(20px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 0.9; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideUp 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 2000);
+        }
+        
+        function updateStatusPanel() {
+            const lastSave = localStorage.getItem('timesheetLastSave');          
+
+            const localStorageStatus = document.getElementById('localStorageStatus');
+            const localStorageText = document.getElementById('localStorageText');
+            if (localStorage.getItem('timesheetData')) {
+                localStorageStatus.className = 'status-dot status-green';
+                localStorageText.textContent = 'Données présentes';
+            } else {
+                localStorageStatus.className = 'status-dot status-red';
+                localStorageText.textContent = 'Aucune donnée';
+            }          
+
+            const autoSaveStatus = document.getElementById('autoSaveStatus');
+            const autoSaveText = document.getElementById('autoSaveText');
+            autoSaveStatus.className = 'status-dot status-green';
+            autoSaveText.textContent = 'Activé';
+                        
+            const syncStatus = document.getElementById('syncStatus');
+            const syncText = document.getElementById('syncText');
+            syncStatus.className = 'status-dot status-orange';
+            syncText.textContent = 'Manuel requis';
+                        
+            const lastSaveTime = document.getElementById('lastSaveTime');
+            if (lastSave) {
+                const saveDate = new Date(parseInt(lastSave));
+                lastSaveTime.textContent = saveDate.toLocaleString('fr-FR');
+            } else {
+                lastSaveTime.textContent = 'Jamais';
+            }
+        }
+
+        function manualSave() {
+            if (autoSave()) {
+                showSaveNotification('💾 Sauvegarde manuelle réussie', 'success');
+            }
+        }
+
+        function downloadBackup() {
+            const data = gatherAllData();
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            const now = new Date();
+            const timestamp = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '_' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+            
+            a.download = `timesheet_${data.personal.lastName || 'backup'}_${timestamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showSaveNotification('📥 Sauvegarde téléchargée', 'success');
+        }
+
+        function clearLocalStorage() {
+            if (confirm('🧹 Vider le cache du navigateur ? Les données non sauvegardées seront perdues.')) {
+                localStorage.removeItem('timesheetData');
+                localStorage.removeItem('timesheetLastSave');
+                updateStatusPanel();
+                showSaveNotification('🧹 Cache vidé', 'info');
+            }
+        }
+        
+        function triggerFileInput() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                loadFromFile(file);
+            }
+        }
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function dragEnter(event) {
+            event.preventDefault();
+            event.target.classList.add('drag-over');
+        }
+
+        function dragLeave(event) {
+            event.target.classList.remove('drag-over');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.target.classList.remove('drag-over');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                loadFromFile(files[0]);
+            }
+        }
+
+        function loadFromFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadDataIntoApp(data);
+                    showSaveNotification('✅ Données chargées depuis le fichier', 'success');
+                } catch (error) {
+                    showSaveNotification('❌ Erreur de chargement: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function loadDataIntoApp(data) {
+            if (data.personal) {
+                ['lastName', 'firstName', 'workYear', 'startDate', 'endDate', 'remainingVacations', 'currentVacations', 'standardHours'].forEach(field => {
+                    const element = document.getElementById(field);
+                    if (element && data.personal[field]) element.value = data.personal[field];
+                });
+                currentYear = parseInt(data.personal.workYear) || currentYear;
+            }
+            
+            if (data.timesheet) timesheetData = data.timesheet;
+            
+            updateAllYearDisplays();
+            generateAllCalendars();
+            updateHolidaysList();
+            updateReport();
+            updateStatusPanel();
+            autoSave();
+        }        
+
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('timesheetData');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    
+                    if (data.personal) {
+                        ['lastName', 'firstName', 'workYear', 'startDate', 'endDate', 'remainingVacations', 'currentVacations', 'standardHours'].forEach(field => {
+                            const element = document.getElementById(field);
+                            if (element && data.personal[field]) element.value = data.personal[field];
+                        });
+                        currentYear = parseInt(data.personal.workYear) || currentYear;
+                    }
+                    
+                    if (data.timesheet) timesheetData = data.timesheet;
+                    
+                    updateAllYearDisplays();
+                    generateAllCalendars();
+                                        
+                    for (let month = 0; month < 12; month++) {
+                        loadCalendarData(month);
+                    }
+                    
+                    updateHolidaysList();
+                    updateReport();
+                    
+                    const lastSave = localStorage.getItem('timesheetLastSave');
+                    if (lastSave) {
+                        const saveDate = new Date(parseInt(lastSave));
+                        console.log(`✅ Données chargées depuis localStorage (${saveDate.toLocaleString()})`);
+                        showSaveNotification(`Données restaurées (${saveDate.toLocaleString()})`);
+                    }
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ Erreur chargement localStorage:', error);
+            }
+            return false;
+        }
+
+        function saveData() {
+            const data = gatherAllData();
+            try {                
+                localStorage.setItem('timesheetData', JSON.stringify(data, null, 2));
+                localStorage.setItem('timesheetLastSave', Date.now().toString());
+                                
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `timesheet_${data.personal.lastName || 'export'}_${data.personal.workYear}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('✅ Données sauvegardées !');
+            } catch (error) {
+                alert('❌ Erreur : ' + error.message);
+            }
+        }
+
+        function loadDataFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.personal) {
+                                ['lastName', 'firstName', 'workYear', 'startDate', 'endDate', 'remainingVacations', 'currentVacations', 'standardHours'].forEach(field => {
+                                    const element = document.getElementById(field);
+                                    if (element && data.personal[field]) element.value = data.personal[field];
+                                });
+                                currentYear = parseInt(data.personal.workYear) || currentYear;
+                            }
+                            if (data.timesheet) timesheetData = data.timesheet;
+                            generateAllCalendars();
+                            updateHolidaysList();
+                            updateReport();
+                            alert('✅ Données chargées !');
+                        } catch (error) {
+                            alert('❌ Erreur : ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function exportData() {
+            const data = gatherAllData();
+            let csvContent = 'Date,Jour,Jour Férié,Début Matin,Fin Matin,Heures Matin,Début Après-midi,Fin Après-midi,Heures Après-midi,Total Heures,Statut\n';
+            
+            for (let month = 0; month < 12; month++) {
+                const lastDay = new Date(currentYear, month + 1, 0).getDate();
+                for (let day = 1; day <= lastDay; day++) {
+                    const date = new Date(currentYear, month, day);
+                    const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayOfWeek = date.getDay();
+                    const holiday = isHoliday(date);
+                    
+                    let status = 'Jour ouvrable';
+                    if (holiday) status = 'Jour férié';
+                    else if (dayOfWeek === 0 || dayOfWeek === 6) status = 'Week-end';
+                    
+                    if (timesheetData[dayKey] || status !== 'Week-end') {
+                        const dayData = timesheetData[dayKey] || {};
+                        const hours = calculateDayHours(dayData);
+                        csvContent += `${dayKey},${dayNames[date.getDay()]},${holiday ? holiday.name : ''},`;
+                        csvContent += `${dayData['am-start'] || ''},${dayData['am-end'] || ''},${hours.am.toFixed(2)},`;
+                        csvContent += `${dayData['pm-start'] || ''},${dayData['pm-end'] || ''},${hours.pm.toFixed(2)},`;
+                        csvContent += `${hours.total.toFixed(2)},${status}\n`;
+                    }
+                }
+            }
+            
+            const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `timesheet_export_${data.personal.lastName || 'export'}_${currentYear}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportJSON() {
+            saveData();
+        }
+
+        function printReport() {
+            const data = gatherAllData();
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Rapport Timesheet ${currentYear}</title>
+                        <style>
+                            body{font-family:Arial,sans-serif;margin:20px;color:#333}
+                            .header{text-align:center;margin-bottom:30px;border-bottom:2px solid #3498db;padding-bottom:20px}
+                            .summary{display:flex;justify-content:space-around;margin-bottom:30px;flex-wrap:wrap}
+                            .summary-item{text-align:center;padding:15px;border:1px solid #ddd;border-radius:5px;margin:5px;min-width:120px}
+                            .summary-item h3{margin:0;color:#3498db;font-size:1.5em}
+                            .summary-item p{margin:5px 0 0 0;font-size:0.9em}
+                            table{width:100%;border-collapse:collapse;margin-top:20px}
+                            th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:12px}
+                            th{background:#f5f5f5;font-weight:bold}
+                            @media print{body{margin:10px}}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>Rapport Timesheet ${currentYear}</h1>
+                            <p><strong>Employé:</strong> ${data.personal.firstName} ${data.personal.lastName}</p>
+                            <p><strong>Période:</strong> du ${data.personal.startDate} au ${data.personal.endDate}</p>
+                            <p><strong>Généré le:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+                        </div>
+                        <div class="summary">
+                            <div class="summary-item"><h3>${document.getElementById('totalHours')?.textContent || '0'}</h3><p>Heures Totales</p></div>
+                            <div class="summary-item"><h3>${document.getElementById('totalDays')?.textContent || '0'}</h3><p>Jours Travaillés</p></div>
+                            <div class="summary-item"><h3>${document.getElementById('expectedHours')?.textContent || '0'}</h3><p>Heures Attendues</p></div>
+                            <div class="summary-item"><h3>${document.getElementById('overtime')?.textContent || '0'}</h3><p>Heures Sup.</p></div>
+                        </div>
+                        ${document.querySelector('.report-table')?.outerHTML || ''}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 500);
+        }
+
+        function resetAllData() {
+            if (confirm('⚠️ Effacer toutes les données ?')) {
+                timesheetData = {};
+                ['lastName', 'firstName', 'remainingVacations', 'currentVacations', 'standardHours'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = ['remainingVacations'].includes(id) ? '0' : ['currentVacations'].includes(id) ? '0' : ['standardHours'].includes(id) ? '8' : '';
+                });
+                generateAllCalendars();
+                updateReport();
+                alert('✅ Données effacées.');
+            }
+        }
+
+        function saveDataWithConvention() {
+            const data = gatherAllData();
+            try {
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                                
+                const year = data.personal.workYear || new Date().getFullYear();
+                const lastName = data.personal.lastName || 'export';
+                a.download = `timesheet_${lastName}_${year}.json`;
+                
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('✅ Données sauvegardées avec convention de nommage !');
+                console.log(`Fichier sauvé: timesheet_${lastName}_${year}.json`);
+            } catch (error) {
+                alert('❌ Erreur : ' + error.message);
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); autoSave(); }
+            if (e.ctrlKey && e.key === 'p') { e.preventDefault(); printReport(); }
+            if (e.ctrlKey && e.key === 'e') { e.preventDefault(); exportData(); }
+        });
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initialisation...');
+            
+            updateAllYearDisplays();
+            generateAllCalendars();
+            updateHolidaysList();
+            updateReport();
+            updateStatusPanel();
+                        
+            const loadedFromLocal = loadFromLocalStorage();
+            
+            if (!loadedFromLocal) {            
+                const loadedWithConvention = await autoLoadWithNamingConvention();
+                
+                if (!loadedWithConvention) {
+                    await autoLoadLatestJson();
+                }
+            }
+                        
+            setInterval(autoSave, 300000);
+                        
+            const personalFields = ['lastName', 'firstName', 'workYear', 'startDate', 'endDate', 'remainingVacations', 'currentVacations', 'standardHours'];
+            
+            personalFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('change', () => {
+                        setTimeout(autoSave, 1000);
+                    });
+                }
+            });
+            
+            console.log('✅ Application prête !');
+        });
+    </script>
+</body>
+</html>
