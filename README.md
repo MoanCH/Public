@@ -1,198 +1,128 @@
-# 📋 Guide d'utilisation - Timesheet Web
+# 📊 Timesheet Web - Application de Suivi du Temps
 
-## Vue d'ensemble
-Timesheet Web est une application de suivi du temps de travail spécialement conçue pour les employés suisses, avec une gestion automatique des jours fériés genevois. L'application permet de saisir précisément les heures de travail avec des sessions multiples par demi-journée et gère automatiquement les absences et congés.
+## 🎯 Vue d'ensemble
+**Timesheet Web** est une application web moderne et complète pour le suivi du temps de travail, spécialement adaptée aux réglementations suisses et aux jours fériés genevois. Cette solution offre une interface intuitive pour la gestion des heures, des congés et des heures supplémentaires.
 
-## 🏗️ Structure de l'application
+## ✨ Fonctionnalités principales
 
-### Interface à onglets
-L'application est organisée en plusieurs sections accessibles via des onglets :
-- **Information** : Configuration personnelle et paramètres
-- **Janvier à Décembre** : 12 onglets mensuels pour la saisie des heures
-- **Rapport** : Synthèse annuelle et statistiques
-- **Statistiques** : Graphiques et répartition des jours
-- **Synchronisation** : Gestion des sauvegardes et imports/exports
+### 📋 Gestion des informations personnelles
+- **Données employé** : Nom, prénom, période de travail
+- **Configuration flexible** : Année de travail, dates de début/fin personnalisables
+- **Paramètres vacances** : Gestion des congés reportés et actuels
+- **Heures standard** : Configuration des heures de travail quotidiennes
 
-## 📝 Fonctionnalités principales
+### 🗓️ Suivi temporel avancé
+- **Calendrier mensuel** : 12 onglets pour chaque mois de l'année
+- **Saisie détaillée** : Matin et après-midi avec périodes multiples (début/fin 1 & 2)
+- **Calculs automatiques** : Totaux journaliers, hebdomadaires et mensuels
+- **Gestion des absences** : 5 types (Vacances, Maladie, Accident, Formation, Spécial)
 
-### 1. Onglet Information
-**Configuration personnelle :**
-- Nom et prénom de l'employé
-- Année de travail (modifiable, régénère automatiquement les calendriers)
-- Période de travail (date de début et fin)
+### 🎄 Conformité locale suisse
+- **Jours fériés genevois** : Intégration automatique des fêtes locales
+- **Calcul de Pâques** : Algorithme précis pour les dates variables
+- **Weekends différenciés** : Distinction samedi/dimanche pour les bonus
 
-**Gestion des vacances :**
-- Vacances restantes de l'année précédente
-- Allocation de vacances pour l'année courante
-- Heures de travail standard par jour (défaut : 8h)
+### ⏰ Gestion des heures supplémentaires
+- **Classification intelligente** : Séparation jours ouvrables/weekends/fériés
+- **Bonus automatiques** : 
+  - Dimanche et fériés : +50% 
+  - Samedi : +25%
+- **Reports mensuels** : Cumul automatique entre les mois
+- **Compensation flexible** : Paiement, récupération partielle ou complète
 
-**Jours fériés :**
-- Affichage automatique des jours fériés suisses et genevois
-- Calcul automatique basé sur l'année sélectionnée
-- Inclut : Nouvel An, Vendredi-Saint, Lundi de Pâques, Ascension, Lundi de Pentecôte, Fête nationale, Jeûne Genevois, Noël, Restauration
+### 📈 Rapports et statistiques
+- **Tableau de bord** : Vue d'ensemble avec indicateurs clés
+- **Rapport mensuel détaillé** : Répartition par type d'heures
+- **Graphiques visuels** : Répartition annuelle des jours travaillés
+- **Analyses d'absences** : Détail par catégorie avec totaux
 
-### 2. Onglets mensuels (Janvier à Décembre)
-
-**Structure de saisie avancée :**
-Chaque jour dispose de :
-- **Matin** : 2 sessions de travail (Début 1, Fin 1, Début 2, Fin 2)
-- **Après-midi** : 2 sessions de travail (Début 1, Fin 1, Début 2, Fin 2)
-- **Calculs automatiques** : Total matin, total après-midi, total journée
-- **Gestion des absences** : Sélecteurs pour matin et après-midi
-
-**Types d'absences :**
-- **V** : Vacances (fond bleu clair)
-- **M** : Maladie (fond rouge clair)
-- **A** : Accident (fond orange clair)
-- **F** : Formation (fond violet clair)
-- **S** : Spécial (fond vert clair)
-
-**Codage couleur des jours :**
-- Blanc : Jours ouvrables
-- Bleu clair : Week-ends
-- Violet clair : Jours fériés
-
-**Fonctionnalités de saisie :**
-- Auto-complétion des heures (saisie "8" devient "08:00")
-- Formats acceptés : 8, 8:, 8.30, 8:30
-- Validation automatique des heures
-- Désactivation automatique des champs lors de sélection d'absence
-
-### 3. Calculs automatiques
-
-**Heures bonus week-end et jours fériés :**
-- Dimanche et jours fériés : 150% (coefficient 1.5)
-- Samedi : 125% (coefficient 1.25)
-- Affichage dans la colonne "Total incl." pour distinction
-
-**Totaux journaliers :**
-- Calcul automatique matin + après-midi
-- Alerte visuelle si heures inférieures au standard sur jour ouvrable
-- Prise en compte des absences dans les calculs
-
-### 4. Onglet Rapport
-
-**Cartes de synthèse :**
-- Heures totales travaillées
-- Nombre de jours travaillés
-- Moyenne d'heures par jour
-- Heures attendues (jours ouvrés × heures standard)
-- Heures supplémentaires (différence entre travaillé et attendu)
-- Vacances restantes (avec code couleur selon le solde)
-
-**Tableau mensuel détaillé :**
-- Répartition par mois des heures matin/après-midi
-- Jours ouvrés vs jours travaillés
-- Écarts par rapport aux heures attendues
-- Moyennes journalières
-- Comptabilisation des absences
-- Heures week-end et bonus séparés
-
-### 5. Onglet Statistiques
-
-**Graphique annuel :**
-- Répartition visuelle des types de jours
-- Barres colorées pour chaque catégorie
-- Données numériques sur chaque barre
-
-**Détails des absences :**
-- Cartes individuelles par type d'absence
-- Compteurs précis en demi-journées
-- Visualisation claire de la répartition
-
-### 6. Onglet Synchronisation
-
-**Sauvegarde locale :**
-- Auto-sauvegarde toutes les 5 minutes
-- Sauvegarde immédiate après chaque modification
-- Stockage dans le navigateur (localStorage)
-
-**Import/Export :**
-- Zone de glisser-déposer pour fichiers JSON
-- Téléchargement de sauvegardes horodatées
-- Convention de nommage : `timesheet_[Nom]_[Année].json`
-
-**Nettoyage :**
-- Effacement sélectif du cache
-- Reset complet des données
-- Confirmations de sécurité
-
-## 🔧 Fonctionnalités techniques
-
-### Chargement automatique
-L'application recherche automatiquement au démarrage :
-1. Données dans le localStorage du navigateur
-2. Fichiers JSON dans le dossier `./Json/` avec conventions :
-   - `timesheet_[année].json`
-   - `timesheet_latest.json`
-   - `timesheet.json`
-   - `latest.json`
-3. Sélection automatique du fichier le plus récent
-
-### Panel de statut (coin supérieur droit)
-- **localStorage** : Présence de données sauvées
-- **Auto-save** : Statut de la sauvegarde automatique
-- **Sync** : Statut de synchronisation
-- **Dernière sauvegarde** : Horodatage de la dernière sauvegarde
-
-### Raccourcis clavier
-- `Ctrl + S` : Sauvegarde manuelle
-- `Ctrl + P` : Impression du rapport
-- `Ctrl + E` : Export CSV
-
-### Bouton flottant
-- Bouton "💾 Auto" en bas à droite
-- Sauvegarde manuelle immédiate
-- Feedback visuel lors de la sauvegarde
-
-## 📊 Calculs et logique métier
-
-### Jours ouvrables
-- Lundi à vendredi, hors jours fériés
-- Ajustement automatique selon les absences déclarées
-
-### Heures attendues
-- Jours ouvrables × heures standard par jour
-- Exclusion automatique des jours d'absence
-
-### Bonus week-end
-- Calcul séparé des heures normales et avec bonus
-- Distinction claire dans les rapports
-
-### Vacances
-- Suivi du solde : reports + allocation annuelle - consommé
-- Alerte visuelle si solde négatif
+### 💾 Sauvegarde et synchronisation
+- **Auto-sauvegarde** : Stockage automatique local toutes les 5 minutes
+- **Export/Import JSON** : Sauvegarde complète des données
+- **Chargement automatique** : Détection du fichier le plus récent
+- **Gestion fichiers** : Drag & drop, sélection manuelle
 
 ## 🎨 Interface utilisateur
 
 ### Design moderne
-- Gradient coloré et interface épurée
-- Responsive design pour mobile et desktop
-- Animations et transitions fluides
+- **Interface responsive** : Adaptation mobile et desktop
+- **Gradients attractifs** : Design contemporain avec effets visuels
+- **Code couleur intuitif** :
+  - 🟦 Jours ouvrables (blanc)
+  - 🟦 Weekends (bleu clair)
+  - 🟣 Jours fériés (violet clair)
+  - 🟦 Vacances (bleu)
+  - 🟥 Maladie (rouge)
+  - 🟧 Accident (orange)
+  - 🟣 Formation (violet)
+  - 🟢 Spécial (vert)
 
-### Notifications
-- Confirmations de sauvegarde
-- Alertes d'erreur
-- Messages de chargement automatique
+### Navigation fluide
+- **Onglets organisés** : 16 sections principales
+- **Panel de statut** : Indicateurs de sauvegarde en temps réel
+- **Bouton flottant** : Accès rapide à la sauvegarde
+- **Raccourcis clavier** : Ctrl+S (sauvegarder), Ctrl+P (imprimer)
 
-### Légendes visuelles
-- Codes couleur explicites sur chaque onglet mensuel
-- Identification claire des types de jours et absences
+## 🔧 Fonctionnalités techniques
 
-## 🔄 Workflow recommandé
+### Validation et assistance
+- **Auto-complétion** : Format HH:MM automatique pour les heures
+- **Calculs en temps réel** : Mise à jour instantanée des totaux
+- **Validation logique** : Vérification de cohérence des données
+- **Alertes visuelles** : Signalement des journées incomplètes
 
-1. **Configuration initiale** : Remplir l'onglet Information
-2. **Saisie quotidienne** : Entrer les heures dans les onglets mensuels
-3. **Suivi régulier** : Consulter l'onglet Rapport pour le suivi
-4. **Analyse** : Utiliser l'onglet Statistiques pour les tendances
-5. **Sauvegarde** : Télécharger régulièrement via l'onglet Synchronisation
+### Gestion des données
+- **Structure JSON** : Format standardisé pour l'export/import
+- **Persistance locale** : Stockage navigateur fiable
+- **Horodatage** : Suivi des modifications avec timestamps
+- **Récupération d'erreur** : Mécanismes de sauvegarde robustes
 
-## 🛡️ Sécurité et fiabilité
+## 📊 Métriques et indicateurs
 
-- Sauvegarde automatique continue
-- Validation des données saisies
-- Confirmations pour les actions destructives
-- Récupération automatique des données perdues
-- Horodatage de toutes les sauvegardes
+### Dashboard principal
+- **Heures totales** : Cumul annuel toutes catégories
+- **Jours travaillés** : Compteur avec demi-journées
+- **Moyenne quotidienne** : Calcul automatique
+- **Heures attendues** : Basé sur les jours ouvrables
+- **Heures supplémentaires** : Écart positif/négatif
+- **Solde vacances** : Congés restants en temps réel
 
-Cette application offre une solution complète et professionnelle pour le suivi du temps de travail, spécialement adaptée au contexte suisse et genevois.
+### Rapports détaillés
+- **Répartition mensuelle** : Heures par catégorie et report
+- **Compensation tracking** : Suivi des modes de récupération
+- **Analyse d'écarts** : Comparaison réalisé vs attendu
+- **Statistiques visuelles** : Graphiques de répartition annuelle
+
+## 🚀 Points forts techniques
+
+### Performance
+- **Calculs optimisés** : Algorithmes efficaces pour les totaux
+- **Mise à jour incrémentale** : Recalcul sélectif des données modifiées
+- **Chargement rapide** : Interface responsive et fluide
+
+### Fiabilité
+- **Auto-sauvegarde** : Protection contre la perte de données
+- **Validation robuste** : Contrôles de cohérence multiples
+- **Gestion d'erreurs** : Mécanismes de récupération intégrés
+
+### Flexibilité
+- **Configuration adaptable** : Paramètres utilisateur personnalisables
+- **Format standard** : Compatibilité JSON pour intégrations
+- **Évolutivité** : Architecture modulaire pour extensions futures
+
+## 📅 Cas d'usage typiques
+
+1. **Saisie quotidienne** : Enregistrement rapide des heures matin/après-midi
+2. **Gestion congés** : Planification et suivi des absences
+3. **Calcul paie** : Export des données pour traitement RH
+4. **Reporting mensuel** : Génération automatique de rapports
+5. **Audit annuel** : Vue d'ensemble statistique complète
+
+## 🎯 Public cible
+- **Employés** : Suivi personnel du temps de travail
+- **Managers** : Contrôle des heures équipes
+- **RH/Paie** : Données fiables pour traitement
+- **Consultants** : Facturation client précise
+- **PME suisses** : Conformité réglementaire locale
+
+Cette application représente une solution complète et moderne pour la gestion du temps de travail, alliant facilité d'usage et fonctionnalités avancées dans le respect des spécificités suisses et genevoises.
