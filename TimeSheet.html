@@ -178,14 +178,43 @@
                         <input type="number" id="overtimeWeekends" value="0" step="0.1" placeholder="0.0" onchange="updateJanuaryCarryOver()">
                     </div>
                 </div>
+                <div class="info-card">
+                    <h3>⚙️ Paramètres des Bonus</h3>
+                    <div class="form-group">
+                        <label>Bonus Samedi (%) :</label>
+                        <input type="number" id="bonusRateSaturday" value="125" step="1" placeholder="125">
+                    </div>
+                    <div class="form-group">
+                        <label>Bonus Dimanche (%) :</label>
+                        <input type="number" id="bonusRateSunday" value="150" step="1" placeholder="150">
+                    </div>
+                    <div class="form-group">
+                        <label>Bonus Jours Fériés (%) :</label>
+                        <input type="number" id="bonusRateHoliday" value="150" step="1" placeholder="150">
+                    </div>
+                    <div class="form-group">
+                        <label>Bonus Heures de Nuit (%) :</label>
+                        <input type="number" id="bonusRateNight" value="100" step="1" placeholder="100">
+                    </div>
+                    <hr style="margin: 20px 0;">
+                    <div class="form-group">
+                        <label>Début période de nuit :</label>
+                        <input type="time" id="nightWorkStart">
+                    </div>
+                    <div class="form-group">
+                        <label>Fin période de nuit :</label>
+                        <input type="time" id="nightWorkEnd">
+                    </div>
+                </div>
             </div>
             <div class="holidays-section">
                 <h3>🎄 Jours Fériés pour <span id="holidayYear">2025</span></h3>
                 <div class="holidays-list" id="holidaysList"></div>
             </div>
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn" onclick="loadDataFile()">📁 Charger</button>
-                <button class="btn btn-export" onclick="saveData()">💾 Sauvegarder</button>
+                <button class="btn btn-warning" onclick="linkFile()">🔗 Lier Fichier</button>
+                <button class="btn btn-export" onclick="saveDataToFile()">💾 Sauvegarder direct</button>
+                <button class="btn" onclick="downloadBackup()">📥 Télécharger une copie</button>
                 <button class="btn btn-danger" onclick="resetAllData()">🗑️ Effacer</button>
             </div>
         </div>
@@ -282,23 +311,20 @@
         </div>
     </div>
     <div style="position: fixed; bottom: 10px; left: 20px; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 5px; font-size: 11px; color: #666; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-        © 2025 JMG - juin 2025 - Version 2.4 (Update : 9 juin 2025)</br>
+        © <span id="copyright-year">2025</span> JMG - juin 2025 - Version 2.5 (Update : 10 juin 2025)</br>
     </div>
-    
+
     <button class="floating-save" onclick="autoSave()">💾 Auto</button>
 
     <script>
     let timesheetData = {};
     let currentYear = 2025;
     let monthlyOvertimeData = {};
-    
-    // Variables globales pour référence
+    let fileHandle;
+
     const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-    
-    // ==========================================================================
-    // CORRECTION 1: Fonction initializeMonthlyData manquante
-    // ==========================================================================
+
     function initializeMonthlyData() {
         monthKeys.forEach(month => {
             if (!monthlyOvertimeData[month]) {
@@ -315,11 +341,7 @@
             }
         });
     }
-    
-    // ==========================================================================
-    // NOUVELLE PARTIE : Fonction de "Template" pour le contenu d'un mois
-    // Cette fonction crée le HTML pour n'importe quel mois.
-    // ==========================================================================
+
     function createMonthTabHTML(monthKey, monthName) {
         return `
         <div id="${monthKey}" class="tab-content">
@@ -382,7 +404,7 @@
                         </div>
                     </div>
                     <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c;">
-                        <h5 style="margin: 0 0 10px 0; color: #2c3e50;">Heures week-end et fériés</h5>
+                        <h5 style="margin: 0 0 10px 0; color: #2c3e50;">Heures week-end & fériés & Nuits</h5>
                         <div style="font-size: 14px;">
                             <p style="margin: 5px 0;">Total mois (avec bonus): <span id="weekendHours-${monthKey}" style="font-weight: bold;">0.0h</span></p>
                             <p style="margin: 5px 0;">Report mois précédent: <span id="carryoverWeekend-${monthKey}" style="font-weight: bold;">0.0h</span></p>
@@ -423,9 +445,14 @@
         `;
     }
 
-    // Cette fonction initialise les données et est appelée quand les reports changent
+    function updateCopyrightYear() {
+        const copyrightYear = document.getElementById('copyright-year');
+        if (copyrightYear) {
+            copyrightYear.textContent = new Date().getFullYear();
+        }
+    }
+
     function updateJanuaryCarryOver() {
-        // Assurer que monthlyOvertimeData est initialisé
         initializeMonthlyData();
 
         const overtimeWorkdays = parseFloat(document.getElementById('overtimeWorkdays')?.value) || 0;
@@ -435,8 +462,6 @@
             monthlyOvertimeData['jan'].carryoverWorkday = overtimeWorkdays;
             monthlyOvertimeData['jan'].carryoverWeekend = overtimeWeekends;
         }
-
-        // On force la mise à jour de tous les calculs
         if (typeof updateReport === 'function') {
             updateReport();
         }
@@ -516,7 +541,7 @@
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             const data = await response.json();
-            loadDataIntoApp(data); // Use the centralized function
+            loadDataIntoApp(data); 
             console.log('✅ Données chargées automatiquement !');
             showAutoLoadNotification(url);
             return true;
@@ -526,7 +551,6 @@
         }
     }
 
-    // CORRECTION 2: Ajouter la fonction autoLoadLatestJson manquante
     async function autoLoadLatestJson() {
         try {
             const latestFile = await findLatestJsonFile();
@@ -543,21 +567,131 @@
     function calculateMonthlyHoursByType(month) {
         let workdayHours = 0;
         let weekendHours = 0;
-        let weekendBonusHours = 0;
         const lastDay = new Date(currentYear, month + 1, 0).getDate();
+
+        for (let day = 1; day <= lastDay; day++) {
+            const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            if (timesheetData[dayKey]) {
+                const data = timesheetData[dayKey];
+                const hours = calculateDayHours(data);
+
+                if (hours.total > 0) {
+                    const date = new Date(currentYear, month, day);
+                    const dayOfWeek = date.getDay();
+                    const holiday = isHoliday(date);
+
+                    if (holiday || dayOfWeek === 0 || dayOfWeek === 6) {
+
+                        weekendHours += calculateWeekendBonus(dayKey, hours.total);
+                    } else {
+
+                        let actualWorkdayHours = 0;
+                        if (!data['absence-am'] || !['V', 'M', 'A', 'F', 'S'].includes(data['absence-am'])) {
+                            actualWorkdayHours += hours.am;
+                        }
+                        if (!data['absence-pm'] || !['V', 'M', 'A', 'F', 'S'].includes(data['absence-pm'])) {
+                            actualWorkdayHours += hours.pm;
+                        }
+                        const distribution = calculateDayHoursDistribution(dayKey);
+                        const workdayRatio = actualWorkdayHours / hours.total;
+                        workdayHours += distribution.normalHours * workdayRatio;
+                        weekendHours += distribution.bonusHours * workdayRatio;
+                    }
+                }
+            }
+        }
+
+        return {
+            workdayHours: workdayHours,
+            weekendHours: weekendHours,
+            weekendBonusHours: 0
+        };
+    }
+
+    function calculateDayHoursDistribution(dayKey) {
+        const data = timesheetData[dayKey];
+        if (!data) return { normalHours: 0, bonusHours: 0 };
+        const date = new Date(dayKey);
+        const dayOfWeek = date.getDay();
+        const holiday = isHoliday(date);
+        const hours = calculateDayHours(data);
+
+        if (holiday || dayOfWeek === 0 || dayOfWeek === 6) {
+            const totalBonusValue = calculateWeekendBonus(dayKey, hours.total);
+            return { 
+                normalHours: 0, 
+                bonusHours: totalBonusValue 
+            };
+        }
+
+        if (!isNightWorkConfigured()) {
+            return { 
+                normalHours: hours.total, 
+                bonusHours: 0 
+            };
+        }
+        const nightHours = calculateNightHours(dayKey);
+        const normalHours = Math.max(0, hours.total - nightHours);
+        const nightBonusRate = (parseFloat(document.getElementById('bonusRateNight')?.value) || 100) / 100;
+        const bonusHours = nightHours * nightBonusRate;
+        console.log(`Debug ${dayKey}: Total=${hours.total}h, Normal=${normalHours}h, Nuit=${nightHours}h, Bonus=${bonusHours}h`);
+        return { 
+            normalHours: normalHours, 
+            bonusHours: bonusHours 
+        };
+    }
+
+function updateMonthlySummary(monthKey) {
+    const monthIndex = monthKeys.indexOf(monthKey);
+    const monthData = calculateMonthlyHoursByType(monthIndex);
+    if (!monthlyOvertimeData[monthKey]) {
+        monthlyOvertimeData[monthKey] = {
+            workdayHours: 0, weekendHours: 0, carryoverWorkday: 0, carryoverWeekend: 0,
+            recoveredHours: 0, compensation: 'none', partialRecoveryHours: 0, remainingWeekendHours: 0
+        };
+    }
+    monthlyOvertimeData[monthKey].workdayHours = monthData.workdayHours;
+    monthlyOvertimeData[monthKey].weekendHours = monthData.weekendHours;
+    if (monthIndex > 0) {
+        const prevMonth = monthKeys[monthIndex - 1];
+        const prevData = monthlyOvertimeData[prevMonth];
+        const standardHours = parseFloat(document.getElementById('standardHours')?.value) || 8;
+        const workingDaysInfo = getWorkingDaysInMonth(currentYear, monthIndex - 1);
+        const expectedHours = workingDaysInfo.adjusted * standardHours;
+        const prevMonthWorkdayRaw = calculateMonthlyHoursByTypeRaw(monthIndex - 1).workdayHours;
+        monthlyOvertimeData[monthKey].carryoverWorkday = 
+            prevMonthWorkdayRaw + prevData.carryoverWorkday + prevData.recoveredHours - expectedHours;
+        if (prevData.compensation === 'pay') {
+            monthlyOvertimeData[monthKey].carryoverWeekend = 0;
+        } else {
+            monthlyOvertimeData[monthKey].carryoverWeekend = prevData.remainingWeekendHours;
+        }
+    }
+    updateMonthlySummaryDisplay(monthKey);
+}
+
+    function calculateMonthlyHoursByTypeRaw(month) {
+        let workdayHours = 0;
+        let weekendHours = 0;
+        const lastDay = new Date(currentYear, month + 1, 0).getDate();
+
         for (let day = 1; day <= lastDay; day++) {
             const dayKey = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const date = new Date(currentYear, month, day);
             const dayOfWeek = date.getDay();
             const holiday = isHoliday(date);
+
             if (timesheetData[dayKey]) {
                 const data = timesheetData[dayKey];
                 const hours = calculateDayHours(data);
+
                 if (hours.total > 0) {
                     if (holiday || dayOfWeek === 0 || dayOfWeek === 6) {
+
                         weekendHours += hours.total;
-                        weekendBonusHours += calculateWeekendBonus(dayKey, hours.total);
                     } else {
+
                         let actualWorkdayHours = 0;
                         if (!data['absence-am'] || !['V', 'M', 'A', 'F', 'S'].includes(data['absence-am'])) {
                             actualWorkdayHours += hours.am;
@@ -570,43 +704,11 @@
                 }
             }
         }
+
         return {
             workdayHours: workdayHours,
-            weekendHours: weekendHours,
-            weekendBonusHours: weekendBonusHours
+            weekendHours: weekendHours
         };
-    }
-
-    function updateMonthlySummary(monthKey) {
-        const monthIndex = monthKeys.indexOf(monthKey);
-        const monthData = calculateMonthlyHoursByType(monthIndex);
-        
-        // Assurer que les données existent
-        if (!monthlyOvertimeData[monthKey]) {
-            monthlyOvertimeData[monthKey] = {
-                workdayHours: 0, weekendHours: 0, carryoverWorkday: 0, carryoverWeekend: 0,
-                recoveredHours: 0, compensation: 'none', partialRecoveryHours: 0, remainingWeekendHours: 0
-            };
-        }
-        
-        monthlyOvertimeData[monthKey].workdayHours = monthData.workdayHours;
-        monthlyOvertimeData[monthKey].weekendHours = monthData.weekendBonusHours;
-        
-        if (monthIndex > 0) {
-            const prevMonth = monthKeys[monthIndex - 1];
-            const prevData = monthlyOvertimeData[prevMonth];
-            const standardHours = parseFloat(document.getElementById('standardHours')?.value) || 8;
-            const workingDaysInfo = getWorkingDaysInMonth(currentYear, monthIndex - 1);
-            const expectedHours = workingDaysInfo.adjusted * standardHours;
-            monthlyOvertimeData[monthKey].carryoverWorkday =
-                prevData.workdayHours + prevData.carryoverWorkday + prevData.recoveredHours - expectedHours;
-            if (prevData.compensation === 'pay') {
-                monthlyOvertimeData[monthKey].carryoverWeekend = 0;
-            } else {
-                monthlyOvertimeData[monthKey].carryoverWeekend = prevData.remainingWeekendHours;
-            }
-        }
-        updateMonthlySummaryDisplay(monthKey);
     }
 
     function updateCompensation(monthKey, type) {
@@ -616,7 +718,7 @@
                 recoveredHours: 0, compensation: 'none', partialRecoveryHours: 0, remainingWeekendHours: 0
             };
         }
-        
+
         monthlyOvertimeData[monthKey].compensation = type;
         const partialField = document.getElementById(`partialRecoveryField-${monthKey}`);
         if (partialField) {
@@ -664,32 +766,41 @@
     function updateMonthlySummaryDisplay(monthKey) {
         const data = monthlyOvertimeData[monthKey];
         if (!data) return;
-        
+
         const workdayHoursEl = document.getElementById(`workdayHours-${monthKey}`);
         if (workdayHoursEl) workdayHoursEl.textContent = `${data.workdayHours.toFixed(2)}h`;
+
         const carryoverWorkdayEl = document.getElementById(`carryoverWorkday-${monthKey}`);
         if (carryoverWorkdayEl) carryoverWorkdayEl.textContent = `${data.carryoverWorkday.toFixed(2)}h`;
+
         const recoveredHoursEl = document.getElementById(`recoveredHours-${monthKey}`);
         if (recoveredHoursEl) recoveredHoursEl.textContent = `${data.recoveredHours.toFixed(2)}h`;
+
         const totalWorkday = data.workdayHours + data.carryoverWorkday + data.recoveredHours;
         const totalWorkdayEl = document.getElementById(`totalWorkdayHours-${monthKey}`);
         if (totalWorkdayEl) totalWorkdayEl.textContent = `${totalWorkday.toFixed(2)}h`;
+
         const weekendHoursEl = document.getElementById(`weekendHours-${monthKey}`);
         if (weekendHoursEl) weekendHoursEl.textContent = `${data.weekendHours.toFixed(2)}h`;
+
         const carryoverWeekendEl = document.getElementById(`carryoverWeekend-${monthKey}`);
         if (carryoverWeekendEl) carryoverWeekendEl.textContent = `${data.carryoverWeekend.toFixed(2)}h`;
+
         const totalWeekend = data.weekendHours + data.carryoverWeekend;
         const totalWeekendEl = document.getElementById(`totalWeekendHours-${monthKey}`);
         if (totalWeekendEl) totalWeekendEl.textContent = `${totalWeekend.toFixed(2)}h`;
+
         const remainingEl = document.getElementById(`remainingWeekendHours-${monthKey}`);
         if (remainingEl) {
             const remaining = totalWeekend - data.recoveredHours;
             remainingEl.textContent = `${remaining.toFixed(2)}h`;
             monthlyOvertimeData[monthKey].remainingWeekendHours = remaining;
         }
+
         if (data.compensation && data.compensation !== 'none') {
             const radio = document.getElementById(`compensation${data.compensation.charAt(0).toUpperCase() + data.compensation.slice(1)}-${monthKey}`);
             if (radio) radio.checked = true;
+
             if (data.compensation === 'partial') {
                 const partialField = document.getElementById(`partialRecoveryField-${monthKey}`);
                 if (partialField) partialField.style.display = 'block';
@@ -759,12 +870,12 @@
     function showTab(tabName) {
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-        
+
         const tabElement = document.getElementById(tabName);
         if (tabElement) {
             tabElement.classList.add('active');
         }
-        
+
         const clickedTab = Array.from(document.querySelectorAll('.nav-tab')).find(tab => {
             const onclick = tab.getAttribute('onclick');
             return onclick && onclick.includes(`'${tabName}'`);
@@ -863,6 +974,7 @@
         const hours = calculateDayHours(data);
         const totalAMElement = document.getElementById(`total-am-${dayKey}`);
         if(totalAMElement) totalAMElement.textContent = `${hours.am.toFixed(2)}h`;
+
         const totalPMElement = document.getElementById(`total-pm-${dayKey}`);
         if(totalPMElement) totalPMElement.textContent = `${hours.pm.toFixed(2)}h`;
         const totalElement = document.getElementById(`total-${dayKey}`);
@@ -873,10 +985,39 @@
             const standardHours = parseFloat(document.getElementById('standardHours')?.value) || 8;
             totalElement.classList.toggle('alert', !holiday && date.getDay() % 6 !== 0 && hours.total > 0 && hours.total < standardHours);
         }
+
         const bonusElement = document.getElementById(`bonus-${dayKey}`);
-        if(bonusElement) {
-            const bonusHours = calculateWeekendBonus(dayKey, hours.total);
-            bonusElement.textContent = bonusHours > hours.total ? `${bonusHours.toFixed(2)}h` : '0.00h';
+        if (bonusElement) {
+            const date = new Date(dayKey);
+            const dayOfWeek = date.getDay();
+            const holiday = isHoliday(date);
+            const totalRawHours = hours.total;
+
+            if (totalRawHours > 0) {
+
+                if (!holiday && dayOfWeek > 0 && dayOfWeek < 6) {
+                    const nightHours = calculateNightHours(dayKey);
+
+                    if (nightHours > 0) {
+                        const rateNight = (parseFloat(document.getElementById('bonusRateNight')?.value) || 100) / 100;
+                        const valorizedNightHours = nightHours * rateNight;
+                        bonusElement.textContent = `${valorizedNightHours.toFixed(2)}h`;
+                    } else {
+                        bonusElement.textContent = '0.00h'; 
+                    }
+                } else {
+                    const compensatedTotal = calculateWeekendBonus(dayKey, totalRawHours);
+                    bonusElement.textContent = `${compensatedTotal.toFixed(2)}h`;
+                }
+            } else {
+                bonusElement.textContent = '0.00h'; 
+            }
+        }
+
+        const monthIndex = parseInt(dayKey.split('-')[1], 10) - 1;
+        const monthKey = monthKeys[monthIndex];
+        if (monthKey) {
+            updateMonthlySummary(monthKey);
         }
     }
 
@@ -929,15 +1070,186 @@
         loadCalendarData(month);
     }
 
+    function timeToMinutes(timeStr) {
+        if (!timeStr || !timeStr.includes(':')) return 0;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    function isNightWorkConfigured() {
+        const nightStart = document.getElementById('nightWorkStart')?.value;
+        const nightEnd = document.getElementById('nightWorkEnd')?.value;
+        return nightStart && nightEnd;
+    }
+
+    /**
+     * Calcule le nombre total d'heures travaillées pendant la période de nuit pour un jour donné.
+     */
+    function calculateNightHours(dayKey) {
+        const nightStartInput = document.getElementById('nightWorkStart')?.value;
+        const nightEndInput = document.getElementById('nightWorkEnd')?.value;
+
+        if (!nightStartInput || !nightEndInput || !timesheetData[dayKey]) {
+            return 0;
+        }
+
+        const nightStart = timeToMinutes(nightStartInput);
+        const nightEnd = timeToMinutes(nightEndInput);
+        let totalNightMinutes = 0;
+        const workSegments = [
+            { start: timeToMinutes(timesheetData[dayKey]['am1-start']), end: timeToMinutes(timesheetData[dayKey]['am1-end']) },
+            { start: timeToMinutes(timesheetData[dayKey]['am2-start']), end: timeToMinutes(timesheetData[dayKey]['am2-end']) },
+            { start: timeToMinutes(timesheetData[dayKey]['pm1-start']), end: timeToMinutes(timesheetData[dayKey]['pm1-end']) },
+            { start: timeToMinutes(timesheetData[dayKey]['pm2-start']), end: timeToMinutes(timesheetData[dayKey]['pm2-end']) },
+        ];
+
+        const getOverlap = (workStart, workEnd, periodStart, periodEnd) => {
+            const overlapStart = Math.max(workStart, periodStart);
+            const overlapEnd = Math.min(workEnd, periodEnd);
+
+            return Math.max(0, overlapEnd - overlapStart);
+        };
+
+        workSegments.forEach(segment => {
+
+            if (segment.start >= segment.end) return;
+
+            if (nightStart < nightEnd) {
+
+                totalNightMinutes += getOverlap(segment.start, segment.end, nightStart, nightEnd);
+            } else {
+                totalNightMinutes += getOverlap(segment.start, segment.end, nightStart, 1440);
+                totalNightMinutes += getOverlap(segment.start, segment.end, 0, nightEnd);
+            }
+        });
+        return totalNightMinutes / 60;
+    }
+
+    function debugNightHours(dayKey) {
+        const nightStartInput = document.getElementById('nightWorkStart')?.value;
+        const nightEndInput = document.getElementById('nightWorkEnd')?.value;
+
+        if (!nightStartInput || !nightEndInput || !timesheetData[dayKey]) {
+            console.log(`Pas de config nuit pour ${dayKey}`);
+            return;
+        }
+
+        console.log(`=== DEBUG ${dayKey} ===`);
+        console.log(`Config nuit: ${nightStartInput} - ${nightEndInput}`);
+
+        const data = timesheetData[dayKey];
+        const segments = [
+            { name: 'AM1', start: data['am1-start'], end: data['am1-end'] },
+            { name: 'AM2', start: data['am2-start'], end: data['am2-end'] },
+            { name: 'PM1', start: data['pm1-start'], end: data['pm1-end'] },
+            { name: 'PM2', start: data['pm2-start'], end: data['pm2-end'] }
+        ];
+
+        segments.forEach(seg => {
+            if (seg.start && seg.end) {
+                const startMin = timeToMinutes(seg.start);
+                const endMin = timeToMinutes(seg.end);
+                const duration = (endMin - startMin) / 60;
+                console.log(`${seg.name}: ${seg.start}-${seg.end} = ${duration.toFixed(2)}h`);
+            }
+        });
+
+        const nightHours = calculateNightHours(dayKey);
+        const totalHours = calculateDayHours(data).total;
+        console.log(`Total: ${totalHours.toFixed(2)}h, Nuit: ${nightHours.toFixed(2)}h`);
+        console.log(`================`);
+    }
+
+    function testExample() {
+    const testKey = '2025-01-15'; 
+
+    if (!timesheetData[testKey]) {
+        timesheetData[testKey] = {};
+    }
+
+    timesheetData[testKey]['am1-start'] = '07:00';
+    timesheetData[testKey]['am1-end'] = '12:00';
+    timesheetData[testKey]['pm1-start'] = '12:30';
+    timesheetData[testKey]['pm1-end'] = '15:30';
+    timesheetData[testKey]['pm2-start'] = '18:00';
+    timesheetData[testKey]['pm2-end'] = '23:59';
+
+    console.log('=== TEST EXEMPLE ===');
+    debugNightHours(testKey);
+
+    const hours = calculateDayHours(timesheetData[testKey]);
+    const distribution = calculateDayHoursDistribution(testKey);
+
+    console.log(`Résultat attendu: 13h98 total, 1h23 bonus`);
+    console.log(`Résultat calculé: ${hours.total.toFixed(2)}h total, ${distribution.bonusHours.toFixed(2)}h bonus`);
+}
+
+    function setupNightWorkListeners() {
+        const nightStartInput = document.getElementById('nightWorkStart');
+        const nightEndInput = document.getElementById('nightWorkEnd');
+
+        if (nightStartInput) {
+            nightStartInput.addEventListener('change', () => {
+                console.log('Configuration heures de nuit modifiée - recalcul...');
+                generateAllCalendars();
+                updateReport();
+                setTimeout(autoSave, 1000);
+            });
+        }
+
+        if (nightEndInput) {
+            nightEndInput.addEventListener('change', () => {
+                console.log('Configuration heures de nuit modifiée - recalcul...');
+                generateAllCalendars();
+                updateReport();
+                setTimeout(autoSave, 1000);
+            });
+        }
+
+        ['bonusRateSaturday', 'bonusRateSunday', 'bonusRateHoliday', 'bonusRateNight'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('change', () => {
+                    console.log(`Taux de bonus ${id} modifié - recalcul...`);
+                    generateAllCalendars();
+                    updateReport();
+                    setTimeout(autoSave, 1000);
+                });
+            }
+        });
+
+        console.log('✅ Listeners configurés pour les heures de nuit et bonus');
+    }
+
     function calculateWeekendBonus(dayKey, totalHours) {
         if (totalHours === 0) return 0;
+
+        const rateSat = (parseFloat(document.getElementById('bonusRateSaturday')?.value) || 100) / 100;
+        const rateSun = (parseFloat(document.getElementById('bonusRateSunday')?.value) || 100) / 100;
+        const rateHol = (parseFloat(document.getElementById('bonusRateHoliday')?.value) || 100) / 100;
+        const rateNight = (parseFloat(document.getElementById('bonusRateNight')?.value) || 100) / 100;
         const date = new Date(dayKey);
         const dayOfWeek = date.getDay();
         const holiday = isHoliday(date);
-        let bonusRate = 1;
-        if (holiday || dayOfWeek === 0) bonusRate = 1.5;
-        else if (dayOfWeek === 6) bonusRate = 1.25;
-        return totalHours * bonusRate;
+
+        if (holiday) {
+            return totalHours * rateHol;
+        } else if (dayOfWeek === 0) { 
+            return totalHours * rateSun;
+        } else if (dayOfWeek === 6) { 
+            return totalHours * rateSat;
+        }
+
+
+        if (!isNightWorkConfigured()) {
+            return totalHours; 
+        }
+
+        const nightHours = calculateNightHours(dayKey);
+        const regularHours = totalHours - nightHours;
+
+
+        return regularHours + (nightHours * rateNight);
     }
 
     function loadCalendarData(month) {
@@ -1051,6 +1363,7 @@
                 compensation: compensationType
             });
         }
+
         const overtime = totalHours - totalExpectedHours;
         const totalHoursEl = document.getElementById('totalHours');
         if (totalHoursEl) totalHoursEl.textContent = totalHours.toFixed(2);
@@ -1112,7 +1425,7 @@
                 }
             }
         }
-        weekends = weekends/2; // Count pairs of Sat/Sun
+        weekends = weekends/2; 
         const chartData = [
             { label: 'Jours travaillés', value: workDays, color: '#27ae60' }, { label: 'Week-ends', value: weekends, color: '#95a5a6' },
             { label: 'Jours fériés', value: holidays, color: '#f39c12' }, { label: 'Vacances', value: vacationDays, color: '#3498db' },
@@ -1147,6 +1460,60 @@
         }
     }
 
+    async function linkFile() {
+        try {
+
+            [fileHandle] = await window.showOpenFilePicker({
+                types: [{
+                    description: 'Fichiers JSON',
+                    accept: { 'application/json': ['.json'] },
+                }],
+            });
+
+
+            const file = await fileHandle.getFile();
+            const content = await file.text();
+            const data = JSON.parse(content);
+
+
+            loadDataIntoApp(data);
+
+            alert(`Fichier "${fileHandle.name}" lié et chargé avec succès !\nVous pouvez maintenant utiliser la sauvegarde directe.`);
+
+        } catch (error) {
+
+            console.log("L'opération de liaison de fichier a été annulée.", error);
+        }
+    }
+
+    async function saveDataToFile() {
+
+        if (!fileHandle) {
+            alert("Erreur : Veuillez d'abord lier un fichier en utilisant le bouton 'Lier Fichier'.");
+            return;
+        }
+
+        try {
+            const writable = await fileHandle.createWritable();
+            const dataToSave = JSON.stringify(gatherAllData(), null, 2);
+            await writable.write(dataToSave);
+            await writable.close();
+            const saveBtn = document.querySelector('.floating-save');
+            if (saveBtn) {
+                saveBtn.innerHTML = '✅ Enregistré!';
+                saveBtn.style.background = '#27ae60';
+                setTimeout(() => {
+                    saveBtn.innerHTML = '💾 Auto';
+                    saveBtn.style.background = '#e74c3c';
+                }, 2500);
+            }
+
+        } catch (error) {
+            console.error("Erreur lors de la sauvegarde directe du fichier :", error);
+            alert("Une erreur est survenue lors de la sauvegarde : " + error.message);
+        }
+    }
+
     function gatherAllData() {
         return {
             personal: {
@@ -1159,7 +1526,13 @@
                 currentVacations: document.getElementById('currentVacations')?.value || '30',
                 standardHours: document.getElementById('standardHours')?.value || '8',
                 overtimeWorkdays: document.getElementById('overtimeWorkdays')?.value || '0',
-                overtimeWeekends: document.getElementById('overtimeWeekends')?.value || '0'
+                overtimeWeekends: document.getElementById('overtimeWeekends')?.value || '0', 
+                bonusRateSaturday: document.getElementById('bonusRateSaturday')?.value || '125',
+                bonusRateSunday: document.getElementById('bonusRateSunday')?.value || '150',
+                bonusRateHoliday: document.getElementById('bonusRateHoliday')?.value || '150',
+                bonusRateNight: document.getElementById('bonusRateNight')?.value || '100',
+                nightWorkStart: document.getElementById('nightWorkStart')?.value || '',
+                nightWorkEnd: document.getElementById('nightWorkEnd')?.value || ''
             },
             timesheet: timesheetData,
             monthlyOvertime: monthlyOvertimeData,
@@ -1172,7 +1545,7 @@
         if (fileInput) fileInput.click();
     }
 
-    // CORRECTION 3: Ajouter la fonction saveData manquante
+
     function saveData() {
         downloadBackup();
     }
@@ -1205,19 +1578,19 @@
         const localStorageStatusEl = document.getElementById('localStorageStatus');
         const localStorageTextEl = document.getElementById('localStorageText');
         const lastSaveTimeEl = document.getElementById('lastSaveTime');
-        
+
         if (localStorageStatusEl && localStorageTextEl) {
             localStorageStatusEl.className = `status-dot status-${localStorage.getItem('timesheetData') ? 'green' : 'red'}`;
             localStorageTextEl.textContent = localStorage.getItem('timesheetData') ? 'Données présentes' : 'Aucune donnée';
         }
-        
+
         if (lastSaveTimeEl) {
             lastSaveTimeEl.textContent = lastSave ? new Date(parseInt(lastSave)).toLocaleString('fr-FR') : 'Jamais';
         }
     }
 
     function manualSave() { autoSave(); }
-    
+
     function downloadBackup() {
         const dataStr = JSON.stringify(gatherAllData(), null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
@@ -1230,19 +1603,19 @@
         a.click();
         URL.revokeObjectURL(url);
     }
-    
+
     function clearLocalStorage() {
         if (confirm('🧹 Vider le cache du navigateur ?')) {
             localStorage.clear();
             location.reload();
         }
     }
-    
+
     function triggerFileInput() { 
         const fileInput = document.getElementById('fileInput');
         if (fileInput) fileInput.click(); 
     }
-    
+
     function handleFileSelect(event) {
         if (event.target.files.length) loadFromFile(event.target.files[0]);
     }
@@ -1280,7 +1653,7 @@
         if (data.timesheet) timesheetData = data.timesheet;
         if (data.monthlyOvertime) monthlyOvertimeData = data.monthlyOvertime;
         else initializeMonthlyData();
-        
+
         updateAllYearDisplays();
         generateAllCalendars();
         updateHolidaysList();
@@ -1305,37 +1678,32 @@
         return false;
     }
 
-    // Ajouter les fonctions manquantes
     function exportData() {
-        // Fonction d'export CSV - implémentation simplifiée
         console.log('Export CSV non implémenté');
     }
-    
+
     function printReport() {
         window.print();
     }
-    
+
     function exportJSON() {
         downloadBackup();
     }
-    
+
     function resetAllData() {
         if (confirm('⚠️ Effacer toutes les données ?')) {
             localStorage.clear();
             location.reload();
         }
     }
-    
     document.addEventListener('keydown', e => {
         if (e.ctrlKey && e.key === 's') { e.preventDefault(); autoSave(); }
         if (e.ctrlKey && e.key === 'p') { e.preventDefault(); printReport(); }
     });
 
-    // --- MODIFICATION : Logique d'initialisation de la page ---
     document.addEventListener('DOMContentLoaded', async () => {
         console.log('🚀 Initialisation...');
 
-        // 1. Génération dynamique du HTML des mois
         const container = document.getElementById('monthly-tabs-container');
         if (container) {
             let allMonthsHTML = '';
@@ -1344,25 +1712,20 @@
             }
             container.innerHTML = allMonthsHTML;
         }
-
-        // 2. Initialisation des données mensuelles
         initializeMonthlyData();
 
-        // 3. Le reste de l'initialisation (qui peut maintenant trouver les éléments créés)
-        updateJanuaryCarryOver();
-        updateAllYearDisplays();
-        generateAllCalendars();
-        updateHolidaysList();
-        updateReport();
-        updateStatusPanel();
-
-        // 4. Chargement des données (local ou serveur)
         if (!loadFromLocalStorage()) {
             await autoLoadLatestJson();
         }
-        
-        setInterval(autoSave, 300000); // 5 minutes auto-save
-        
+        updateJanuaryCarryOver();
+        updateAllYearDisplays();
+        generateAllCalendars(); 
+        updateHolidaysList();
+        updateReport();
+        updateStatusPanel();
+        setupNightWorkListeners();
+        updateCopyrightYear();
+        setInterval(autoSave, 300000); 
         console.log('✅ Application prête !');
     });
    </script>
